@@ -94,6 +94,28 @@ clawremove explain --ai
 
 ## 命令
 
+### 环境检测
+
+```bash
+# 完整环境报告
+claw-remove environment
+
+# AI 清单
+claw-remove inventory
+
+# 安全审计
+claw-remove security
+
+# 存储分析
+claw-remove hygiene
+
+# JSON 输出
+claw-remove environment --json
+claw-remove security --json
+```
+
+### Agent 清理
+
 ```bash
 claw-remove products
 claw-remove audit --product openclaw --json
@@ -107,6 +129,17 @@ claw-remove explain --product openclaw --json
 
 ### 命令说明
 
+**环境检测命令:**
+- `environment`
+  完整环境检测报告（运行时、Agent、产物、安全、存储）
+- `inventory`
+  AI 运行时和 Agent 清单
+- `security`
+  AI 工具安全审计（API 密钥泄露检测）
+- `hygiene`
+  AI 存储使用分析
+
+**清理命令:**
 - `products`
   列出当前编译进程序里的产品 provider
 - `audit`

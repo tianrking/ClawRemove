@@ -91,6 +91,28 @@ clawremove explain --ai
 
 ## Comandos
 
+### Inspección de Entorno
+
+```bash
+# Informe completo del entorno
+claw-remove environment
+
+# Inventario de IA
+claw-remove inventory
+
+# Auditoría de seguridad
+claw-remove security
+
+# Análisis de almacenamiento
+claw-remove hygiene
+
+# Salida JSON
+claw-remove environment --json
+claw-remove security --json
+```
+
+### Limpieza de Agent
+
 ```bash
 claw-remove products
 claw-remove audit --product openclaw --json
@@ -104,6 +126,17 @@ claw-remove explain --product openclaw --json
 
 ### Resumen de comandos
 
+**Comandos de Entorno:**
+- `environment`
+  Informe completo de inspección del entorno (runtime, agentes, artefactos, seguridad, almacenamiento).
+- `inventory`
+  Inventario de runtime y agentes de IA.
+- `security`
+  Auditoría de seguridad de herramientas IA (exposición de API keys).
+- `hygiene`
+  Análisis de uso de almacenamiento de IA.
+
+**Comandos de Limpieza:**
 - `products`
   Lista los proveedores compilados
 - `audit`

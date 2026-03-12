@@ -111,6 +111,28 @@ Depending on platform and provider rules, ClawRemove can discover:
 
 ## Commands
 
+### Environment Inspection
+
+```bash
+# Full environment report
+claw-remove environment
+
+# AI inventory only
+claw-remove inventory
+
+# Security audit only
+claw-remove security
+
+# Storage hygiene only
+claw-remove hygiene
+
+# JSON output
+claw-remove environment --json
+claw-remove security --json
+```
+
+### Agent Cleanup
+
 ```bash
 claw-remove products
 claw-remove audit --product openclaw --json
@@ -124,6 +146,17 @@ claw-remove explain --product openclaw --json
 
 ### Command Summary
 
+**Environment Commands:**
+- `environment`
+  Full environment inspection report (runtime, agents, artifacts, security, hygiene).
+- `inventory`
+  AI runtime and agent inventory.
+- `security`
+  AI tool security audit (API key exposure).
+- `hygiene`
+  AI storage usage analysis.
+
+**Cleanup Commands:**
 - `products`
   Lists compiled-in product providers.
 - `audit`

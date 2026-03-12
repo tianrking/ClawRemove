@@ -10,6 +10,253 @@ import (
 	"github.com/tianrking/ClawRemove/internal/model"
 )
 
+// PrintEnvironment prints a full environment report.
+func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
+	if jsonMode {
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	}
+
+	lines := []string{
+		"Agent Environment Report",
+		"========================",
+		"",
+		"Platform: " + report.Platform,
+		"Architecture: " + report.Host.Arch,
+		"",
+		"AI Runtime",
+		"----------",
+		report.Runtime.Summary,
+	}
+	for _, rt := range report.Runtime.Detected {
+		status := "stopped"
+		if rt.Running {
+			status = "running"
+		}
+		line := fmt.Sprintf("  %s (%s)", rt.Name, status)
+		if rt.Version != "" {
+			line += " v" + rt.Version
+		}
+		if rt.Port > 0 {
+			line += fmt.Sprintf(" port:%d", rt.Port)
+		}
+		lines = append(lines, line)
+	}
+
+	lines = append(lines, "",
+		"Agent Tools",
+		"-----------",
+		report.Agents.Summary)
+	if len(report.Agents.Applications) > 0 {
+		lines = append(lines, "  Applications:")
+		for _, app := range report.Agents.Applications {
+			line := fmt.Sprintf("    %s at %s", app.Name, app.Path)
+			lines = append(lines, line)
+		}
+	}
+	if len(report.Agents.Frameworks) > 0 {
+		lines = append(lines, "  Frameworks:")
+		for _, fw := range report.Agents.Frameworks {
+			line := fmt.Sprintf("    %s (%s)", fw.Name, fw.Manager)
+			if fw.Version != "" {
+				line += " v" + fw.Version
+			}
+			lines = append(lines, line)
+		}
+	}
+
+	lines = append(lines, "",
+		"AI Artifacts",
+		"------------",
+		report.Artifacts.Summary)
+	if len(report.Artifacts.Models) > 0 {
+		lines = append(lines, "  Models:")
+		for _, m := range report.Artifacts.Models {
+			lines = append(lines, fmt.Sprintf("    %s: %s at %s", m.Name, formatSize(m.Size), m.Path))
+		}
+	}
+	if len(report.Artifacts.Caches) > 0 {
+		lines = append(lines, "  Caches:")
+		for _, c := range report.Artifacts.Caches {
+			lines = append(lines, fmt.Sprintf("    %s: %s at %s", c.Name, formatSize(c.Size), c.Path))
+		}
+	}
+
+	lines = append(lines, "",
+		"Security",
+		"--------",
+		report.Security.Summary)
+	for _, f := range report.Security.Findings {
+		severity := strings.ToUpper(f.Severity)
+		if severity == "HIGH" {
+			severity = "⚠️ HIGH"
+		}
+		lines = append(lines, fmt.Sprintf("  [%s] %s: %s", severity, f.Provider, f.Location))
+		if f.Remediation != "" {
+			lines = append(lines, fmt.Sprintf("    → %s", f.Remediation))
+		}
+	}
+
+	lines = append(lines, "",
+		"Hygiene",
+		"-------",
+		report.Hygiene.Summary)
+	if len(report.Hygiene.Recommendations) > 0 {
+		lines = append(lines, "  Recommendations:")
+		for _, rec := range report.Hygiene.Recommendations {
+			lines = append(lines, "    - "+rec)
+		}
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+
+// PrintInventory prints only the inventory section.
+func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
+	if jsonMode {
+		inventory := struct {
+			Runtime   model.RuntimeSection   `json:"runtime"`
+			Agents    model.AgentsSection    `json:"agents"`
+			Artifacts model.ArtifactsSection `json:"artifacts"`
+		}{
+			Runtime:   report.Runtime,
+			Agents:    report.Agents,
+			Artifacts: report.Artifacts,
+		}
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(inventory)
+	}
+
+	lines := []string{
+		"AI Inventory",
+		"============",
+		"",
+		"Runtime: " + report.Runtime.Summary,
+	}
+	for _, rt := range report.Runtime.Detected {
+		status := "stopped"
+		if rt.Running {
+			status = "running"
+		}
+		lines = append(lines, fmt.Sprintf("  - %s [%s]", rt.Name, status))
+	}
+
+	lines = append(lines, "", "Agents: "+report.Agents.Summary)
+	for _, app := range report.Agents.Applications {
+		lines = append(lines, fmt.Sprintf("  - %s: %s", app.Name, app.Path))
+	}
+	for _, fw := range report.Agents.Frameworks {
+		lines = append(lines, fmt.Sprintf("  - %s (%s)", fw.Name, fw.Manager))
+	}
+
+	lines = append(lines, "", "Artifacts: "+report.Artifacts.Summary)
+	for _, m := range report.Artifacts.Models {
+		lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+
+// PrintSecurity prints only the security section.
+func PrintSecurity(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
+	if jsonMode {
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report.Security)
+	}
+
+	lines := []string{
+		"AI Security Audit",
+		"=================",
+		"",
+		"Summary: " + report.Security.Summary,
+	}
+	if report.Security.HighRisk > 0 {
+		lines = append(lines, fmt.Sprintf("High Risk Issues: %d", report.Security.HighRisk))
+	}
+
+	if len(report.Security.Findings) > 0 {
+		lines = append(lines, "", "Findings:")
+		for _, f := range report.Security.Findings {
+			severity := strings.ToUpper(f.Severity)
+			if severity == "HIGH" {
+				severity = "⚠️ HIGH"
+			}
+			lines = append(lines, fmt.Sprintf("  [%s] %s", severity, f.Type))
+			lines = append(lines, fmt.Sprintf("    Provider: %s", f.Provider))
+			lines = append(lines, fmt.Sprintf("    Location: %s", f.Location))
+			if f.Line > 0 {
+				lines = append(lines, fmt.Sprintf("    Line: %d", f.Line))
+			}
+			lines = append(lines, fmt.Sprintf("    Fix: %s", f.Remediation))
+		}
+	} else {
+		lines = append(lines, "", "No security issues found.")
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+
+// PrintHygiene prints only the hygiene section.
+func PrintHygiene(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
+	if jsonMode {
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report.Hygiene)
+	}
+
+	lines := []string{
+		"AI Storage Hygiene",
+		"==================",
+		"",
+		"Summary: " + report.Hygiene.Summary,
+		"",
+		"Storage Usage:",
+		fmt.Sprintf("  Models:    %s", formatSize(report.Hygiene.ModelsSize)),
+		fmt.Sprintf("  Cache:     %s", formatSize(report.Hygiene.CacheSize)),
+		fmt.Sprintf("  Vector DB: %s", formatSize(report.Hygiene.VectorDBSize)),
+		fmt.Sprintf("  Logs:      %s", formatSize(report.Hygiene.LogSize)),
+		"  -------------------",
+		fmt.Sprintf("  Total:     %s", formatSize(report.Hygiene.TotalSize)),
+	}
+
+	if len(report.Hygiene.Recommendations) > 0 {
+		lines = append(lines, "", "Recommendations:")
+		for _, rec := range report.Hygiene.Recommendations {
+			lines = append(lines, "  - "+rec)
+		}
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+
+func formatSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+		TB = GB * 1024
+	)
+	switch {
+	case bytes >= TB:
+		return fmt.Sprintf("%.1fTB", float64(bytes)/TB)
+	case bytes >= GB:
+		return fmt.Sprintf("%.1fGB", float64(bytes)/GB)
+	case bytes >= MB:
+		return fmt.Sprintf("%.1fMB", float64(bytes)/MB)
+	case bytes >= KB:
+		return fmt.Sprintf("%.1fKB", float64(bytes)/KB)
+	default:
+		return fmt.Sprintf("%dB", bytes)
+	}
+}
+
 func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 	if jsonMode {
 		encoder := json.NewEncoder(w)

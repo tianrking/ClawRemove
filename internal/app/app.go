@@ -36,6 +36,25 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 0, output.PrintProducts(stdout, facts, options.JSON)
 	}
 
+	// Environment inspection commands (no product required)
+	if options.Command == "environment" || options.Command == "inventory" || options.Command == "security" || options.Command == "hygiene" {
+		runner := system.NewRunner()
+		host := platform.Detect()
+		engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, nil), host)
+		envReport := engine.InspectEnvironment(ctx)
+
+		switch options.Command {
+		case "inventory":
+			return 0, output.PrintInventory(stdout, envReport, options.JSON)
+		case "security":
+			return 0, output.PrintSecurity(stdout, envReport, options.JSON)
+		case "hygiene":
+			return 0, output.PrintHygiene(stdout, envReport, options.JSON)
+		case "environment":
+			return 0, output.PrintEnvironment(stdout, envReport, options.JSON)
+		}
+	}
+
 	provider, err := products.Resolve(options.Product)
 	if err != nil {
 		return 2, err
@@ -87,6 +106,9 @@ func parseOptions(args []string) (model.Options, error) {
 		case "products":
 			opts.Command = "products"
 			return opts, nil
+		case "environment", "inventory", "security", "hygiene":
+			opts.Command = args[0]
+			args = args[1:] // Continue to parse flags
 		case "audit", "plan", "apply", "verify", "explain":
 			opts.Command = args[0]
 			args = args[1:]

@@ -214,3 +214,89 @@ type Advice struct {
 	Trace           []string         `json:"trace,omitempty"`
 	UserMessage     string           `json:"userMessage"`
 }
+
+// EnvironmentReport is the output of the environment audit command.
+type EnvironmentReport struct {
+	Platform  string           `json:"platform"`
+	Host      Host             `json:"host"`
+	Runtime   RuntimeSection   `json:"runtime"`
+	Agents    AgentsSection    `json:"agents"`
+	Artifacts ArtifactsSection `json:"artifacts"`
+	Security  SecuritySection  `json:"security"`
+	Hygiene   HygieneSection   `json:"hygiene"`
+}
+
+// RuntimeSection contains detected AI runtimes.
+type RuntimeSection struct {
+	Detected []RuntimeItem `json:"detected"`
+	Summary  string        `json:"summary"`
+}
+
+// RuntimeItem represents a detected AI runtime.
+type RuntimeItem struct {
+	Name       string `json:"name"`
+	Version    string `json:"version,omitempty"`
+	Path       string `json:"path,omitempty"`
+	Running    bool   `json:"running"`
+	ModelsSize int64  `json:"modelsSize,omitempty"`
+	Port       int    `json:"port,omitempty"`
+}
+
+// AgentsSection contains detected agent tools and frameworks.
+type AgentsSection struct {
+	Applications []AgentItem `json:"applications"`
+	Frameworks   []AgentItem `json:"frameworks"`
+	Summary      string      `json:"summary"`
+}
+
+// AgentItem represents a detected agent or framework.
+type AgentItem struct {
+	Name    string `json:"name"`
+	Path    string `json:"path,omitempty"`
+	Version string `json:"version,omitempty"`
+	Manager string `json:"manager,omitempty"` // npm, pip, etc.
+}
+
+// ArtifactsSection contains detected AI artifacts.
+type ArtifactsSection struct {
+	Models     []ArtifactItem `json:"models"`
+	VectorDBs  []ArtifactItem `json:"vectorDbs"`
+	Caches     []ArtifactItem `json:"caches"`
+	TotalSize  int64          `json:"totalSize"`
+	Summary    string         `json:"summary"`
+}
+
+// ArtifactItem represents a detected artifact.
+type ArtifactItem struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+	Size int64  `json:"size,omitempty"`
+}
+
+// SecuritySection contains security findings.
+type SecuritySection struct {
+	Findings    []SecurityFinding `json:"findings"`
+	HighRisk    int               `json:"highRisk"`
+	Summary     string            `json:"summary"`
+}
+
+// SecurityFinding represents a security issue.
+type SecurityFinding struct {
+	Type        string `json:"type"`
+	Provider    string `json:"provider"`
+	Location    string `json:"location"`
+	Line        int    `json:"line,omitempty"`
+	Severity    string `json:"severity"`
+	Remediation string `json:"remediation"`
+}
+
+// HygieneSection contains storage analysis.
+type HygieneSection struct {
+	ModelsSize    int64  `json:"modelsSize"`
+	CacheSize     int64  `json:"cacheSize"`
+	VectorDBSize  int64  `json:"vectorDbSize"`
+	LogSize       int64  `json:"logSize"`
+	TotalSize     int64  `json:"totalSize"`
+	Recommendations []string `json:"recommendations"`
+	Summary       string `json:"summary"`
+}
