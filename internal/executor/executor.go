@@ -82,12 +82,17 @@ func (e Executor) cleanShellProfile(action model.Action, options model.Options) 
 		}
 		return model.Result{OK: false, Action: string(action.Kind), Target: action.Target, Reason: action.Reason, Error: err.Error()}
 	}
-	next := removeCompletionBlock(string(raw))
+	next := removeMarkerLines(string(raw), action.Markers)
 	if next == string(raw) {
 		return model.Result{OK: true, Action: string(action.Kind), Target: action.Target, Reason: action.Reason, Skipped: true}
 	}
 	if options.DryRun {
 		return model.Result{OK: true, Action: string(action.Kind), Target: action.Target, Reason: action.Reason, DryRun: true}
+	}
+	// Safety: write backup before mutating
+	backupPath := action.Target + ".clawremove.bak"
+	if berr := os.WriteFile(backupPath, raw, 0o644); berr != nil {
+		return model.Result{OK: false, Action: string(action.Kind), Target: action.Target, Reason: action.Reason, Error: "could not write backup: " + berr.Error()}
 	}
 	if err := os.WriteFile(action.Target, []byte(next), 0o644); err != nil {
 		return model.Result{OK: false, Action: string(action.Kind), Target: action.Target, Reason: action.Reason, Error: err.Error()}
@@ -95,24 +100,52 @@ func (e Executor) cleanShellProfile(action model.Action, options model.Options) 
 	return model.Result{OK: true, Action: string(action.Kind), Target: action.Target, Reason: action.Reason}
 }
 
-func removeCompletionBlock(content string) string {
+// removeMarkerLines removes any line from a shell profile that contains a provider marker,
+// along with the immediately following non-empty eval/source line if paired with it.
+func removeMarkerLines(content string, markers []string) string {
 	lines := strings.Split(content, "\n")
 	var out []string
 	skipNext := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
+	for i, line := range lines {
 		if skipNext {
 			skipNext = false
 			continue
 		}
-		if trimmed == "# OpenClaw Completion" {
-			skipNext = true
+		trimmed := strings.TrimSpace(line)
+		lower := strings.ToLower(trimmed)
+		// Drop comment or eval lines that reference a known marker
+		markerLine := false
+		for _, m := range markers {
+			if m != "" && strings.Contains(lower, strings.ToLower(m)) {
+				markerLine = true
+				break
+			}
+		}
+		// Legacy hard-coded OpenClaw single-line completion blocks (backward compat)
+		if trimmed == "# OpenClaw Completion" || trimmed == "# openclaw completion" {
+			markerLine = true
+		}
+		if markerLine {
+			// If the next line is an eval or source that relates, skip it too
+			if i+1 < len(lines) {
+				nextTrimmed := strings.TrimSpace(lines[i+1])
+				nextLower := strings.ToLower(nextTrimmed)
+				if strings.HasPrefix(nextLower, "eval") || strings.HasPrefix(nextLower, "source") || strings.HasPrefix(nextLower, ". ") {
+					for _, m := range markers {
+						if m != "" && strings.Contains(nextLower, strings.ToLower(m)) {
+							skipNext = true
+							break
+						}
+					}
+				}
+			}
 			continue
 		}
 		out = append(out, line)
 	}
 	return strings.Join(out, "\n")
 }
+
 
 func slicesClone(in []string) []string {
 	out := make([]string, len(in))

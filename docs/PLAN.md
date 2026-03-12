@@ -119,6 +119,7 @@ Implemented today:
 - provider-specific verification rules (`internal/verify/verify.go`)
 - clean separation between engine and CLI rendering using `internal/output`
 - smart discovery: shell profiles validated by content scan, listener ports declared per-provider, workspace dirs generalized across providers
+- marker-driven shell profile cleanup with backup-before-write safety; `Action.Markers` now carries provider context end-to-end
 
 Still missing or incomplete:
 
@@ -225,7 +226,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Begin Phase 3: Stabilize cross-platform adapters for edge cases in processes and services.
+1. Add `executor` and `discovery` unit tests to improve coverage on these newly-enhanced packages.
 
 ## Rules For Agents
 

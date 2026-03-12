@@ -16,7 +16,7 @@ func Build(discovery model.Discovery, evidence model.EvidenceSet, facts model.Pr
 	if !options.AuditOnly {
 		actions = append(actions, serviceActions(discovery, evidence, facts, options, adapter)...)
 		actions = append(actions, packageActions(discovery, evidence, facts, options)...)
-		actions = append(actions, shellActions(discovery, options)...)
+		actions = append(actions, shellActions(discovery, facts, options)...)
 		actions = append(actions, processActions(discovery, evidence, options, adapter)...)
 		actions = append(actions, containerActions(discovery, evidence, options)...)
 		actions = append(actions, pathActions(discovery, evidence, facts, options)...)
@@ -109,16 +109,17 @@ func packageActions(discovery model.Discovery, evidence model.EvidenceSet, facts
 	return actions
 }
 
-func shellActions(discovery model.Discovery, options model.Options) []model.Action {
+func shellActions(discovery model.Discovery, facts model.ProductFacts, options model.Options) []model.Action {
 	if options.KeepShell {
 		return nil
 	}
 	var actions []model.Action
 	for _, file := range discovery.ShellProfiles {
 		actions = append(actions, model.Action{
-			Kind:   model.ActionEditFile,
-			Target: file,
-			Reason: "Remove OpenClaw completion block",
+			Kind:    model.ActionEditFile,
+			Target:  file,
+			Reason:  "Remove " + facts.DisplayName + " completion and hook lines",
+			Markers: facts.Markers,
 		})
 	}
 	return actions

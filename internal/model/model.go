@@ -113,6 +113,7 @@ type Action struct {
 	Platform   string     `json:"platform,omitempty"`
 	Risk       string     `json:"risk,omitempty"`
 	HighRisk   bool       `json:"highRisk,omitempty"`
+	Markers    []string   `json:"markers,omitempty"`
 }
 
 type Plan struct {
