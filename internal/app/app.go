@@ -19,10 +19,16 @@ import (
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
+var Version = "dev"
+
 func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) (int, error) {
 	options, err := parseOptions(args)
 	if err != nil {
 		return 2, err
+	}
+	if options.Version {
+		fmt.Fprintln(stdout, "claw-remove version", Version)
+		return 0, nil
 	}
 	if options.Command == "products" {
 		return 0, printProducts(stdout, options.JSON)
@@ -113,6 +119,7 @@ func parseOptions(args []string) (model.Options, error) {
 	fs.BoolVar(&opts.KeepShell, "keep-shell", false, "keep shell completion/profile integration")
 	fs.BoolVar(&opts.KillProcesses, "kill-processes", false, "terminate matching processes")
 	fs.BoolVar(&opts.RemoveDocker, "remove-docker", false, "remove matching docker/podman containers and images")
+	fs.BoolVar(&opts.Version, "version", false, "print version information and exit")
 	fs.StringVar(&opts.Product, "product", opts.Product, "product provider id")
 	fs.SetOutput(io.Discard)
 	if err := fs.Parse(args); err != nil {

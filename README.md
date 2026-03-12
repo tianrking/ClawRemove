@@ -59,6 +59,8 @@ The current release target is a production-grade OpenClaw removal CLI built on t
 
 Each product provider is now expected to describe not only facts, but also provider-specific skills and tools for controlled analysis and future expansion.
 
+Release scripts now inject version metadata into binaries and produce per-platform archives with SHA256 checksums.
+
 ## Current Provider
 
 Currently included:
@@ -149,6 +151,8 @@ Shared flags:
   Emit structured machine-readable output.
 - `--ai`
   Include controlled advisory analysis in the report.
+- `--version`
+  Print version information and exit.
 - `--dry-run`
   Report intended changes without applying them.
 - `--yes`

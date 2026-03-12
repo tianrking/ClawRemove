@@ -103,15 +103,16 @@ Implemented today:
 - residual verification classifier with confirmed versus investigate buckets
 - provider capability model with provider-specific skills and tools
 - explicit `internal/evidence` layer and partial LLM split into prompts/providers/reactor
-- initial `internal/platform` adapters (darwin/linux/windows) wired into controlled probe commands
+- platform adapters (darwin/linux/windows) wired into controlled probes, discovery, and planning paths
 - explicit architecture assessment in `docs/ARCHITECTURE.md`
 - multi-driver LLM configuration and fallback-chain capability
+- version metadata injected into binaries
+- generated checksums and release archives
+- expanded OpenClaw legacy aliases and app paths
 
 Still missing or incomplete:
 
 - deeper platform-specific service discovery edge cases and test coverage
-- formal release packaging and checksums
-- richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
 - a richer provider skill and tool authoring workflow
 - richer provider/runtime tool contracts for `skills` and `tools`
@@ -219,11 +220,9 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Add version injection and release packaging.
-2. Turn `internal/skills` and `internal/tools` into runtime contracts.
-3. Expand OpenClaw legacy aliases and service naming coverage.
-4. Add provider-aware multi-model routing trace output and GitHub release automation.
-5. Add deeper platform adapter tests for service/process/listener edge cases.
+1. Turn `internal/skills` and `internal/tools` into runtime contracts.
+2. Add provider-aware multi-model routing trace output and GitHub release automation.
+3. Add deeper platform adapter tests for service/process/listener edge cases.
 
 ## Rules For Agents
 

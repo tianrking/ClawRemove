@@ -15,6 +15,7 @@ type Options struct {
 	KeepShell     bool
 	KillProcesses bool
 	RemoveDocker  bool
+	Version       bool
 	SourceRoot    string
 }
 

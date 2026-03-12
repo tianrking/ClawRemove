@@ -21,6 +21,8 @@ func (Provider) Facts() model.ProductFacts {
 			".clawdbot",
 			".moldbot",
 			".moltbot",
+			".openclaw-legacy",
+			".claw-dev",
 		},
 		ConfigNames: []string{
 			"openclaw.json",
@@ -35,6 +37,8 @@ func (Provider) Facts() model.ProductFacts {
 			"bot.molt",
 			"clawdbot",
 			"moltbot",
+			"openclaw-legacy",
+			"openclaw-beta",
 		},
 		ShellProfileGlobs: []string{
 			".zshrc",
@@ -49,6 +53,7 @@ func (Provider) Facts() model.ProductFacts {
 			"openclaw",
 			"openclaw-",
 			"openclaw-img-",
+			"openclaw-updater-",
 			"openclaw-restart-",
 			"openclaw-zai-fallback-",
 			".openclaw-install-stage-",
@@ -65,6 +70,10 @@ func (Provider) Facts() model.ProductFacts {
 			"Library/HTTPStorages/ai.openclaw.mac",
 			"Library/Cookies/ai.openclaw.mac.binarycookies",
 			"Library/LaunchAgents/ai.openclaw.mac.plist",
+			".local/share/applications/openclaw.desktop",
+			".config/OpenClaw",
+			"AppData/Roaming/OpenClaw",
+			"AppData/Local/Programs/OpenClaw",
 		},
 		CLIPaths: []string{
 			".local/bin/openclaw",
