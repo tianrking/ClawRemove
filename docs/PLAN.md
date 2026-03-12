@@ -85,6 +85,7 @@ Implemented today:
 - baseline CI
 - multilingual README set
 - controlled advisor scaffold and `explain` command
+- OpenAI-compatible LLM client with a read-only ReAct tool loop
 
 Still missing or incomplete:
 

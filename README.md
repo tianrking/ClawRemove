@@ -93,6 +93,13 @@ ClawRemove may later integrate an LLM-assisted analysis layer, but only under st
 
 This keeps ClawRemove useful like an agent while remaining auditable like a proper system tool.
 
+The first implementation of this architecture is now present:
+
+- an OpenAI-compatible LLM client
+- a controlled ReAct loop
+- a read-only tool protocol over in-memory discovery and plan data
+- a hard boundary that prevents the model from issuing destructive commands directly
+
 ## Commands
 
 ```bash
@@ -145,6 +152,52 @@ Shared flags:
 - `--remove-docker`
   Opt in to removing matching Docker or Podman containers and images.
 
+## LLM Configuration
+
+ClawRemove can attach a controlled advisor to `audit`, `verify`, and `explain`.
+
+The advisor is optional. If no LLM configuration is present, ClawRemove falls back to deterministic advisory output.
+
+Environment variables:
+
+- `CLAWREMOVE_LLM_API_KEY`
+  API key for the configured provider.
+- `CLAWREMOVE_LLM_BASE_URL`
+  OpenAI-compatible base URL. Default: `https://api.openai.com/v1`
+- `CLAWREMOVE_LLM_MODEL`
+  Model name. Default: `gpt-4.1-mini`
+- `CLAWREMOVE_LLM_PROVIDER`
+  Provider label for configuration tracking. Default: `openai-compatible`
+- `CLAWREMOVE_LLM_MAX_STEPS`
+  Maximum controlled ReAct steps. Default: `4`
+- `CLAWREMOVE_LLM_TIMEOUT_SECONDS`
+  Request timeout. Default: `45`
+
+Example:
+
+```bash
+export CLAWREMOVE_LLM_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="gpt-4.1-mini"
+claw-remove explain --product openclaw --ai --json
+```
+
+## Controlled Tool Protocol
+
+The LLM does not receive shell access.
+
+Instead, it can request only read-only tools over the existing report:
+
+- `summary`
+- `state_dirs`
+- `workspace_dirs`
+- `services`
+- `packages`
+- `processes`
+- `containers`
+- `plan_actions`
+
+Those tools inspect in-memory data already collected by the deterministic engine. They do not execute system commands, mutate files, or broaden the scan surface.
+
 ## What ClawRemove Detects
 
 Depending on platform and provider rules, ClawRemove can discover:
@@ -185,7 +238,9 @@ internal/core              engine orchestration
 internal/discovery         source-driven discovery layer
 internal/plan              safe action planning
 internal/executor          command and file execution
+internal/llm               controlled advisor, client, and ReAct loop
 internal/output            human and JSON reporting
+internal/platform          host and platform abstractions
 internal/products          provider registry
 internal/products/openclaw OpenClaw provider
 internal/system            system command runner
@@ -266,6 +321,12 @@ Ask for a controlled explanation:
 
 ```bash
 claw-remove explain --product openclaw --json
+```
+
+Ask for an LLM-assisted explanation:
+
+```bash
+claw-remove explain --product openclaw --ai --json
 ```
 
 ## Roadmap
