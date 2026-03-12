@@ -184,5 +184,6 @@ type Advice struct {
 	NeededEvidence  []string         `json:"neededEvidence"`
 	Recommendations []Recommendation `json:"recommendations"`
 	RiskNotes       []string         `json:"riskNotes"`
+	Trace           []string         `json:"trace,omitempty"`
 	UserMessage     string           `json:"userMessage"`
 }

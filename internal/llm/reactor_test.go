@@ -22,6 +22,19 @@ func (f *fakeClient) CompleteJSON(_ context.Context, _ string, _ []llmproviders.
 	return response, nil
 }
 
+type fakeTraceClient struct {
+	response string
+	trace    llmproviders.Trace
+}
+
+func (f *fakeTraceClient) CompleteJSON(_ context.Context, _ string, _ []llmproviders.Message) (string, error) {
+	return f.response, nil
+}
+
+func (f *fakeTraceClient) CompleteJSONWithTrace(_ context.Context, _ string, _ []llmproviders.Message) (string, llmproviders.Trace, error) {
+	return f.response, f.trace, nil
+}
+
 func TestControlledAdvisorRunsReadOnlyToolLoop(t *testing.T) {
 	client := &fakeClient{
 		responses: []string{
@@ -71,5 +84,25 @@ func TestPathProbeRejectsUnknownTarget(t *testing.T) {
 	_, err := mediator.ExecuteTool(report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
 	if err == nil {
 		t.Fatal("expected path probe to reject unknown target")
+	}
+}
+
+func TestControlledAdvisorIncludesTraceWhenEnabled(t *testing.T) {
+	client := &fakeTraceClient{
+		response: `{"kind":"final","thoughtSummary":"ok"}`,
+		trace: llmproviders.Trace{
+			Selected: "openrouter:openai/gpt-4.1-mini",
+			Attempts: []string{"openai:gpt-4.1-mini:fail", "openrouter:openai/gpt-4.1-mini:ok"},
+		},
+	}
+	advisor := controlledAdvisor{
+		client:   client,
+		config:   Config{Enabled: true, MaxSteps: 1, Trace: true},
+		mediator: mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"})),
+	}
+
+	advice := advisor.Assess(context.Background(), model.Report{Product: "openclaw"})
+	if len(advice.Trace) == 0 {
+		t.Fatal("expected trace output when trace is enabled")
 	}
 }

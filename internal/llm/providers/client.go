@@ -34,6 +34,15 @@ type Client interface {
 	CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error)
 }
 
+type Trace struct {
+	Selected string
+	Attempts []string
+}
+
+type TraceClient interface {
+	CompleteJSONWithTrace(ctx context.Context, systemPrompt string, messages []Message) (string, Trace, error)
+}
+
 type candidate struct {
 	ID     string
 	Client modelClient
@@ -147,18 +156,29 @@ func newSingleClient(cfg singleConfig) modelClient {
 }
 
 func (c chainClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error) {
+	content, _, err := c.CompleteJSONWithTrace(ctx, systemPrompt, messages)
+	return content, err
+}
+
+func (c chainClient) CompleteJSONWithTrace(ctx context.Context, systemPrompt string, messages []Message) (string, Trace, error) {
 	if len(c.candidates) == 0 {
-		return "", fmt.Errorf("no llm candidates configured")
+		return "", Trace{}, fmt.Errorf("no llm candidates configured")
 	}
 	var errs []string
+	var attempts []string
 	for _, candidate := range c.candidates {
 		content, err := candidate.Client.CompleteJSON(ctx, systemPrompt, messages)
 		if err == nil {
-			return content, nil
+			attempts = append(attempts, candidate.ID+":ok")
+			return content, Trace{
+				Selected: candidate.ID,
+				Attempts: attempts,
+			}, nil
 		}
 		errs = append(errs, candidate.ID+": "+err.Error())
+		attempts = append(attempts, candidate.ID+":fail")
 	}
-	return "", fmt.Errorf("all llm candidates failed: %s", strings.Join(errs, " | "))
+	return "", Trace{Attempts: attempts}, fmt.Errorf("all llm candidates failed: %s", strings.Join(errs, " | "))
 }
 
 func secondsToDuration(seconds int) time.Duration {

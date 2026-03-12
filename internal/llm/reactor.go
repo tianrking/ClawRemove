@@ -78,7 +78,22 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) mode
 	}
 
 	for step := 0; step < a.config.MaxSteps; step++ {
-		content, err := a.client.CompleteJSON(ctx, systemPrompt, messages)
+		var (
+			content string
+			err     error
+		)
+		if traceClient, ok := a.client.(llmproviders.TraceClient); ok {
+			var trace llmproviders.Trace
+			content, trace, err = traceClient.CompleteJSONWithTrace(ctx, systemPrompt, messages)
+			if a.config.Trace && len(trace.Attempts) > 0 {
+				base.Trace = append(base.Trace, "llm-attempts["+itoa(step)+"]="+strings.Join(trace.Attempts, " -> "))
+			}
+			if a.config.Trace && trace.Selected != "" {
+				base.Trace = append(base.Trace, "llm-selected["+itoa(step)+"]="+trace.Selected)
+			}
+		} else {
+			content, err = a.client.CompleteJSON(ctx, systemPrompt, messages)
+		}
 		if err != nil {
 			base.RiskNotes = append(base.RiskNotes, "LLM advisor fallback: "+err.Error())
 			return base
@@ -161,4 +176,23 @@ func mustJSON(value any) string {
 		return "{}"
 	}
 	return string(body)
+}
+
+func itoa(value int) string {
+	if value == 0 {
+		return "0"
+	}
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = -value
+	}
+	var buf [32]byte
+	i := len(buf)
+	for value > 0 {
+		i--
+		buf[i] = byte('0' + (value % 10))
+		value /= 10
+	}
+	return sign + string(buf[i:])
 }

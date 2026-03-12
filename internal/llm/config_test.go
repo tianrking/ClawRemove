@@ -40,3 +40,14 @@ func TestLoadConfigFromEnvSupportsMultipleDrivers(t *testing.T) {
 		t.Fatalf("expected shared model list, got %d", len(cfg.Drivers[0].Models))
 	}
 }
+
+func TestLoadConfigFromEnvTraceFlag(t *testing.T) {
+	t.Setenv("CLAWREMOVE_LLM_PROVIDER", "openai")
+	t.Setenv("OPENAI_API_KEY", "openai-key")
+	t.Setenv("CLAWREMOVE_LLM_TRACE", "true")
+
+	cfg := LoadConfigFromEnv()
+	if !cfg.Trace {
+		t.Fatal("expected trace flag to be enabled")
+	}
+}

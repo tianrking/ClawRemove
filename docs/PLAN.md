@@ -9,6 +9,7 @@
 - Added platform adapters (`darwin`, `linux`, `windows`) and routed controlled probes, discovery, and planning through adapters.
 - Added multi-driver LLM support direction and implementation baseline for `openai`, `anthropic`, `openrouter`, `zhipu`, and `openai-compatible`.
 - Added confidence-based planning policy that downgrades low-confidence destructive actions to report-only.
+- Added optional provider/model routing trace output for multi-driver LLM chains.
 
 ## Mission
 
@@ -221,7 +222,7 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Turn `internal/skills` and `internal/tools` into runtime contracts.
-2. Add provider-aware multi-model routing trace output and GitHub release automation.
+2. Add GitHub release automation.
 3. Add deeper platform adapter tests for service/process/listener edge cases.
 
 ## Rules For Agents

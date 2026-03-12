@@ -12,6 +12,7 @@ type Config struct {
 	Drivers   []Driver
 	MaxTokens int
 	MaxSteps  int
+	Trace     bool
 	Timeout   time.Duration
 	UserAgent string
 }
@@ -28,6 +29,7 @@ func LoadConfigFromEnv() Config {
 	cfg := Config{
 		MaxTokens: envOrInt("CLAWREMOVE_LLM_MAX_TOKENS", 1200),
 		MaxSteps:  envOrInt("CLAWREMOVE_LLM_MAX_STEPS", 4),
+		Trace:     envOrBool("CLAWREMOVE_LLM_TRACE", false),
 		Timeout:   time.Duration(envOrInt("CLAWREMOVE_LLM_TIMEOUT_SECONDS", 45)) * time.Second,
 		UserAgent: envOr("CLAWREMOVE_LLM_USER_AGENT", "ClawRemove/0"),
 	}
@@ -127,6 +129,21 @@ func envOrInt(key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func envOrBool(key string, fallback bool) bool {
+	raw := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if raw == "" {
+		return fallback
+	}
+	switch raw {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 func parseProviders(raw string) []string {

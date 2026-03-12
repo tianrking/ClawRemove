@@ -214,6 +214,8 @@ Environment variables:
   Maximum controlled ReAct steps.
 - `CLAWREMOVE_LLM_TIMEOUT_SECONDS`
   Request timeout in seconds.
+- `CLAWREMOVE_LLM_TRACE`
+  Enable routing trace output in `advice.trace` (attempt chain + selected provider/model).
 
 Defaults:
 
