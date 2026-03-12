@@ -1,5 +1,56 @@
 # ClawRemove Development Plan
 
+## Strategic Directions
+
+ClawRemove has three core directions that provide real value:
+
+### 1. AI Environment Inspector (Primary)
+
+The most reasonable direction - scan and inventory AI environments:
+
+```bash
+claw-remove audit
+```
+
+Outputs:
+- AI runtimes detected (Ollama, LM Studio, GPT4All)
+- AI frameworks installed (langchain, openai sdk, transformers)
+- AI model artifacts (llama models, cached models)
+- AI tools installed (cursor, openclaw, windsurf)
+- Storage analysis (model cache sizes)
+
+Similar to: `docker info`, `brew doctor`
+
+### 2. AI Tool Uninstaller (Original)
+
+Deep uninstall for AI tools:
+
+```bash
+claw-remove apply --product cursor
+```
+
+Supports:
+- Cursor
+- OpenClaw
+- Windsurf
+- Aider
+- Cline
+- Continue.dev
+
+### 3. AI Machine Hygiene Tool (Future)
+
+Check AI resource usage:
+
+```bash
+claw-remove hygiene
+```
+
+Reports:
+- AI storage: 86GB (model caches)
+- Vector databases running
+- GPU memory usage by AI processes
+- Orphaned model files
+
 ## Latest Progress
 
 - **Multi-Provider Architecture**: ClawRemove is now an Agent Removal Framework supporting multiple AI agents.
