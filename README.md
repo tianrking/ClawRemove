@@ -1,6 +1,6 @@
 <div align="center">
   <h1>ClawRemove</h1>
-  <p><strong>A surgical, cross-platform claw removal engine.</strong></p>
+  <p><strong>A surgical, cross-platform AI Agent removal engine.</strong></p>
   <p>
     <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
@@ -11,9 +11,9 @@
   <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
 </div>
 
-ClawRemove is a professional cross-platform claw removal engine written in Go.
+ClawRemove is a professional cross-platform AI Agent removal engine written in Go.
 
-Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of OpenClaw and other claw-family agents without behaving like a generic cleaner that sprays changes across the system.
+Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of AI agents like OpenClaw, NanoBot, PicoClaw, and other AI assistant tools without behaving like a generic cleaner that sprays changes across the system.
 
 ClawRemove is designed to be:
 
@@ -24,9 +24,9 @@ ClawRemove is designed to be:
 - extensible through product providers
 - suitable for both CLI-first workflows and future desktop control software
 
-ClawRemove should be understood as a controlled uninstall claw:
+ClawRemove should be understood as a controlled uninstall tool:
 
-- it understands how claw agents install, persist, and leave residue
+- it understands how AI agents install, persist, and leave residue
 - it uses that understanding to remove them cleanly
 - it does not become a noisy resident agent itself
 
@@ -37,6 +37,14 @@ ClawRemove should be understood as a controlled uninstall claw:
 - Español: [README.es.md](./README.es.md)
 - Development plan for agents: [docs/PLAN.md](./docs/PLAN.md)
 - Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+
+## Supported AI Agents
+
+| Agent | Description | State Directory |
+|-------|-------------|-----------------|
+| OpenClaw | AI assistant platform | ~/.openclaw |
+| NanoBot | Python-based AI agent | ~/.nanobot |
+| PicoClaw | Go-based AI agent | ~/.picoclaw |
 
 ## Scope
 
@@ -53,23 +61,11 @@ It is a removal-first tool, not a system maintenance suite.
 
 ## Project Status
 
-ClawRemove is in active build-out.
+ClawRemove is in active development.
 
-The current release target is a production-grade OpenClaw removal CLI built on top of a provider-based engine that can later support additional claw-family products without rewriting the core.
+The current release target is a production-grade AI Agent removal CLI built on top of a provider-based engine that supports OpenClaw, NanoBot, PicoClaw, and future AI agents without rewriting the core.
 
-Each product provider is now expected to provide facts as well as runtime tool and skill contracts for controlled analysis and future expansion. For a detailed guide on creating and injecting new providers, see the [Provider Authoring Guide](docs/PROVIDER_AUTHORING.md).
-
-For machine integrators, the engine uses a stable [JSON Output Schema](docs/OUTPUT_SCHEMA.md).
-
-Release scripts now inject version metadata into binaries and produce per-platform archives with SHA256 checksums.
-
-## Current Provider
-
-Currently included:
-
-- `openclaw`
-
-The engine is already structured for future providers such as other claw-family products, but the current implementation is intentionally focused on OpenClaw first.
+Each product provider provides facts as well as runtime tool and skill contracts for controlled analysis and future expansion. For a detailed guide on creating and injecting new providers, see the [Provider Authoring Guide](docs/PROVIDER_AUTHORING.md).
 
 ## Core Principles
 
@@ -77,43 +73,28 @@ The engine is already structured for future providers such as other claw-family 
 - Plan before action: destructive changes should be inspectable before execution.
 - High-risk actions are opt-in: killing processes and removing containers or images are never implicit.
 - Minimal footprint: no telemetry, no persistent service, no hidden state database.
-- Provider architecture: each supported claw product is a dedicated rule pack.
+- Provider architecture: each supported AI agent is a dedicated rule pack.
 - Provider capabilities: each supported product can expose its own skills and read-only tool set.
 - Controlled intelligence: any future LLM assistance is advisory only unless the deterministic engine can justify the action.
 
-## Why ClawRemove
+## What ClawRemove Detects
 
-- Built for removal, not generic machine cleanup.
-- Default behavior is conservative and reviewable.
-- Evidence matters more than heuristics.
-- JSON output is suitable for automation and future desktop tooling.
-- The repository is structured for continued agent-driven iteration.
-- The long-term design allows an AI-assisted analyst without letting the model directly mutate the system.
+Depending on platform and provider rules, ClawRemove can discover:
 
-## Controlled AI Direction
-
-ClawRemove may later integrate an LLM-assisted analysis layer, but only under strict constraints:
-
-- the LLM can explain findings and ask for more evidence
-- the LLM can help classify uncertainty and improve operator guidance
-- the LLM cannot directly issue destructive shell commands
-- the deterministic engine remains the final authority for execution
-
-This keeps ClawRemove useful like an agent while remaining auditable like a proper system tool.
-
-The first implementation of this architecture is now present:
-
-- multi-provider LLM support for OpenAI, Anthropic, and other OpenAI-compatible APIs
-- a controlled ReAct loop
-- an explicit `internal/evidence` layer
-- explicit evidence provenance (`rule`, `source`, `confidence`) consumed by planning and verification
-- a split LLM stack with `internal/llm/prompts`, `internal/llm/providers`, and `internal/llm/mediation`
-- platform adapters for darwin/linux/windows used by controlled probes, discovery, and planning
-- a read-only tool protocol over in-memory discovery and plan data
-- provider-specific skills and tools metadata
-- a hard boundary that prevents the model from issuing destructive commands directly
-
-The current architecture assessment and target structure are documented in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+- state directories
+- workspaces (provider-declared workspace subdirectory names)
+- temp and log paths
+- app bundles and app data
+- launchd, systemd, and scheduled-task registrations
+- npm, pnpm, bun, pip, and Homebrew installations
+- shell completion and profile traces (content-scanned against provider markers)
+- matching processes
+- listening ports (provider-declared port list)
+- crontab references
+- Docker and Podman containers and images
+- Windows registry keys and values
+- Environment variables
+- Hosts file entries
 
 ## Commands
 
@@ -148,7 +129,7 @@ claw-remove explain --product openclaw --json
 Shared flags:
 
 - `--product`
-  Product provider id. Current default: `openclaw`.
+  Product provider id. Options: `openclaw`, `nanobot`, `picoclaw`.
 - `--json`
   Emit structured machine-readable output.
 - `--ai`
@@ -202,150 +183,6 @@ Environment variables:
   Fallback key when provider is `openrouter`.
 - `ZHIPU_API_KEY`
   Fallback key when provider is `zhipu`.
-- `BIGMODEL_API_KEY`
-  Secondary fallback key for `zhipu`.
-- `CLAWREMOVE_LLM_BASE_URL`
-  Provider base URL override.
-- `CLAWREMOVE_LLM_MODEL`
-  Model name override.
-- `CLAWREMOVE_LLM_MODELS`
-  Comma-separated model fallback chain shared by configured providers.
-- `CLAWREMOVE_LLM_MAX_TOKENS`
-  Output token budget for advisory responses.
-- `CLAWREMOVE_LLM_MAX_STEPS`
-  Maximum controlled ReAct steps.
-- `CLAWREMOVE_LLM_TIMEOUT_SECONDS`
-  Request timeout in seconds.
-- `CLAWREMOVE_LLM_TRACE`
-  Enable routing trace output in `advice.trace` (attempt chain + selected provider/model).
-
-Defaults:
-
-- `openai`
-  Base URL: `https://api.openai.com/v1`
-  Model: `gpt-4.1-mini`
-- `anthropic`
-  Base URL: `https://api.anthropic.com/v1`
-  Model: `claude-3-5-sonnet-latest`
-- `openai-compatible`
-  Base URL: `https://api.openai.com/v1`
-  Model: `gpt-4.1-mini`
-
-Provider-specific overrides are also supported:
-
-- `CLAWREMOVE_LLM_OPENAI_BASE_URL`, `CLAWREMOVE_LLM_OPENAI_MODELS`, `CLAWREMOVE_LLM_OPENAI_API_KEY`
-- `CLAWREMOVE_LLM_ANTHROPIC_BASE_URL`, `CLAWREMOVE_LLM_ANTHROPIC_MODELS`, `CLAWREMOVE_LLM_ANTHROPIC_API_KEY`
-- `CLAWREMOVE_LLM_OPENROUTER_BASE_URL`, `CLAWREMOVE_LLM_OPENROUTER_MODELS`, `CLAWREMOVE_LLM_OPENROUTER_API_KEY`
-- `CLAWREMOVE_LLM_ZHIPU_BASE_URL`, `CLAWREMOVE_LLM_ZHIPU_MODELS`, `CLAWREMOVE_LLM_ZHIPU_API_KEY`
-
-Example with OpenAI:
-
-```bash
-export CLAWREMOVE_LLM_PROVIDER="openai"
-export OPENAI_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="gpt-4.1-mini"
-claw-remove explain --product openclaw --ai --json
-```
-
-Example with Anthropic:
-
-```bash
-export CLAWREMOVE_LLM_PROVIDER="anthropic"
-export ANTHROPIC_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="claude-3-5-sonnet-latest"
-claw-remove explain --product openclaw --ai --json
-```
-
-Example with another OpenAI-compatible provider:
-
-```bash
-export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
-export CLAWREMOVE_LLM_BASE_URL="https://your-provider.example/v1"
-export CLAWREMOVE_LLM_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="your-model-name"
-claw-remove explain --product openclaw --ai --json
-```
-
-Example with a multi-provider fallback chain:
-
-```bash
-export CLAWREMOVE_LLM_PROVIDERS="openai,openrouter,zhipu,anthropic"
-export OPENAI_API_KEY="..."
-export OPENROUTER_API_KEY="..."
-export ZHIPU_API_KEY="..."
-export ANTHROPIC_API_KEY="..."
-export CLAWREMOVE_LLM_MODELS="gpt-4.1-mini,glm-4.5-air,claude-3-5-sonnet-latest"
-claw-remove explain --product openclaw --ai --json
-```
-
-## Controlled Tool Protocol
-
-The LLM does not receive shell access.
-
-Instead, it can request only read-only tools over the existing report:
-
-- `summary`
-- `verification`
-- `state_dirs`
-- `workspace_dirs`
-- `services`
-- `packages`
-- `processes`
-- `containers`
-- `plan_actions`
-- `path_probe`
-- `service_probe`
-- `package_probe`
-- `process_probe`
-- `shell_profile_probe`
-
-Those tools either inspect in-memory data already collected by the deterministic engine or perform tightly scoped read-only probes against already discovered targets. They do not mutate files, do not delete data, and do not broaden the scan surface beyond known findings.
-
-## Provider Skills And Tools
-
-ClawRemove now treats product providers as capability bundles instead of plain fact tables.
-
-Each provider can define:
-
-- `facts`
-  Install paths, markers, package refs, shell traces, and other deterministic fingerprints.
-- `skills`
-  High-level product-specific analysis abilities that the advisor and future controllers can reason about.
-- `tools`
-  Read-only probes that are safe for the advisor to call when investigating already discovered targets.
-
-This structure is intended to scale as ClawRemove adds more products, more models, and richer operator guidance without turning the engine into an unbounded autonomous agent.
-
-## Architecture Status
-
-Current state:
-
-- clear enough to build on
-- not bloated yet
-- partially decoupled
-- still needs a dedicated evidence layer
-- still needs stronger platform adapters
-- still needs a fuller split inside the LLM subsystem
-- still needs broader platform adapter coverage beyond probe command routing
-
-ClawRemove is intentionally being shaped toward a stricter architecture now, before more providers and models make the code harder to untangle.
-
-`cmd/claw-remove/main.go` intentionally lives under `cmd/claw-remove/` even though it is a single file. This is idiomatic Go command layout and keeps space for additional binaries later without restructuring imports or release scripts.
-
-## Verification Model
-
-`verify` now classifies leftovers instead of behaving like a second plain audit pass.
-
-Residuals are grouped as:
-
-- `exact`
-  Confirmed product-owned residue, such as state directories and app artifacts.
-- `strong`
-  Highly likely residue, such as installed packages, service registrations, and live matching processes.
-- `heuristic`
-  Evidence that still needs human review, such as listeners, shell profiles, and some cron or image matches.
-
-This classification is also exposed to the LLM advisor so the model can reason over stronger evidence instead of guessing from raw discovery alone.
 
 ## Safe Removal Workflow
 
@@ -363,28 +200,6 @@ Recommended workflow:
    Review the dry-run plan shown by ClawRemove and confirm interactively.
 5. `apply --yes`
    Use only for automation or after prior review.
-
-By default, `apply` is not silent. It prints a preview and asks you to type a confirmation phrase before removal starts.
-
-This keeps the tool comprehensive without turning it into an unsafe fully automatic remover.
-
-If you need JSON output for automation, use `plan` or `verify` for review first, then call `apply --yes`.
-
-## What ClawRemove Detects
-
-Depending on platform and provider rules, ClawRemove can discover:
-
-- state directories
-- workspaces (provider-declared workspace subdirectory names)
-- temp and log paths
-- app bundles and app data
-- launchd, systemd, and scheduled-task registrations
-- npm, pnpm, bun, and Homebrew installations
-- shell completion and profile traces (content-scanned against provider markers, not just path matched)
-- matching processes
-- listening ports (provider-declared port list, not hard-coded)
-- crontab references
-- Docker and Podman containers and images
 
 ## Safety Model
 
@@ -418,6 +233,8 @@ internal/output            human and JSON reporting
 internal/platform          host and platform abstractions
 internal/products          provider registry
 internal/products/openclaw OpenClaw provider
+internal/products/nanobot  NanoBot provider
+internal/products/picoclaw PicoClaw provider
 internal/skills            provider skill catalog
 internal/tools             provider tool catalog
 internal/model             reports, evidence, capabilities, and verification models
@@ -426,12 +243,6 @@ docs                       roadmap and development plan
 scripts                    build helpers
 dist                       local build artifacts
 ```
-
-The architecture is built to support:
-
-- more claw-family providers later
-- a future desktop controller or upper-computer UI
-- stable JSON reporting for automation
 
 ## Build
 
@@ -495,32 +306,16 @@ Verify residual state:
 claw-remove verify --product openclaw --json
 ```
 
-Ask for a controlled explanation:
-
-```bash
-claw-remove explain --product openclaw --json
-```
-
-Ask for an LLM-assisted explanation:
-
-```bash
-claw-remove explain --product openclaw --ai --json
-```
-
-Run a safe interactive removal:
-
-```bash
-claw-remove apply --product openclaw
-```
-
-Run a non-interactive removal only after review:
-
-```bash
-claw-remove apply --product openclaw --yes
-```
-
 ## Roadmap
 
 The long-term roadmap lives in [docs/PLAN.md](./docs/PLAN.md).
 
 That document is written in English on purpose so human contributors and autonomous agents can use the same source of truth for continued development.
+
+## Contributing
+
+We welcome contributions! Please see [docs/PROVIDER_AUTHORING.md](./docs/PROVIDER_AUTHORING.md) for how to add new AI agent providers.
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.

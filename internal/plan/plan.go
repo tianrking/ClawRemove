@@ -20,6 +20,9 @@ func Build(discovery model.Discovery, evidence model.EvidenceSet, facts model.Pr
 		actions = append(actions, processActions(discovery, evidence, options, adapter)...)
 		actions = append(actions, containerActions(discovery, evidence, options)...)
 		actions = append(actions, pathActions(discovery, evidence, facts, options)...)
+		actions = append(actions, registryActions(discovery, evidence, facts, options, adapter)...)
+		actions = append(actions, envVarActions(discovery, evidence, facts, options)...)
+		actions = append(actions, hostsActions(discovery, evidence, facts, options)...)
 	}
 
 	actions = append(actions, auditActions(evidence)...)
@@ -315,4 +318,102 @@ func itoa(value int) string {
 		value /= 10
 	}
 	return sign + string(buf[i:])
+}
+
+// registryActions generates actions for Windows registry cleanup.
+func registryActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options, adapter platform.Adapter) []model.Action {
+	if discovery.Platform != "windows" {
+		return nil
+	}
+
+	var actions []model.Action
+	for _, regKey := range discovery.RegistryKeys {
+		ev := matchEvidence(evidence, "registry", regKey.RootKey+"\\"+regKey.Path)
+
+		// If value is specified, delete the value; otherwise delete the entire key
+		if regKey.Value != "" {
+			cmd := adapter.RegistryDeleteValueCommand(regKey.RootKey, regKey.Path, regKey.Value)
+			if len(cmd) > 0 {
+				actions = append(actions, makeActionFromEvidence(ev, model.Action{
+					Kind:     model.ActionRunCommand,
+					Target:   regKey.RootKey + "\\" + regKey.Path + "\\" + regKey.Value,
+					Reason:   "Remove " + facts.DisplayName + " registry value",
+					Command:  cmd,
+					Platform: "windows",
+				}))
+			}
+		} else {
+			cmd := adapter.RegistryDeleteKeyCommand(regKey.RootKey, regKey.Path)
+			if len(cmd) > 0 {
+				actions = append(actions, makeActionFromEvidence(ev, model.Action{
+					Kind:     model.ActionRunCommand,
+					Target:   regKey.RootKey + "\\" + regKey.Path,
+					Reason:   "Remove " + facts.DisplayName + " registry key",
+					Command:  cmd,
+					Platform: "windows",
+				}))
+			}
+		}
+	}
+	return actions
+}
+
+// envVarActions generates actions for environment variable cleanup.
+func envVarActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) []model.Action {
+	_ = options
+	var actions []model.Action
+
+	for _, envVar := range discovery.EnvVars {
+		ev := matchEvidence(evidence, "env_var", envVar.Name+"="+envVar.Value)
+
+		// For Windows, we can remove via registry
+		if discovery.Platform == "windows" {
+			var regPath string
+			if envVar.Scope == "system" {
+				regPath = "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"
+			} else {
+				regPath = "HKCU\\Environment"
+			}
+
+			// Create a report-only action for now (environment cleanup is risky)
+			actions = append(actions, makeActionFromEvidence(ev, model.Action{
+				Kind:     model.ActionReportOnly,
+				Target:   envVar.Name + " (" + envVar.Scope + ")",
+				Reason:   "Remove " + facts.DisplayName + " environment variable reference (manual cleanup recommended)",
+				Platform: "windows",
+			}))
+
+			_ = regPath // Will be used for actual registry deletion
+		} else {
+			// For Unix systems, report shell profile edits needed
+			actions = append(actions, makeActionFromEvidence(ev, model.Action{
+				Kind:     model.ActionReportOnly,
+				Target:   envVar.Name,
+				Reason:   "Remove " + facts.DisplayName + " environment variable from shell profile",
+				Platform: discovery.Platform,
+			}))
+		}
+	}
+	return actions
+}
+
+// hostsActions generates actions for hosts file cleanup.
+func hostsActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) []model.Action {
+	_ = options
+	var actions []model.Action
+
+	for _, entry := range discovery.HostsEntries {
+		ev := matchEvidence(evidence, "hosts_entry", entry)
+
+		// Hosts file modification is risky, report only
+		actions = append(actions, makeActionFromEvidence(ev, model.Action{
+			Kind:     model.ActionReportOnly,
+			Target:   entry,
+			Reason:   "Remove " + facts.DisplayName + " hosts file entry (manual cleanup recommended)",
+			Platform: discovery.Platform,
+			HighRisk: true,
+			Risk:     "Modifies system hosts file",
+		}))
+	}
+	return actions
 }

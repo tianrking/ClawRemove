@@ -40,6 +40,31 @@ func (genericAdapter) ScheduledTaskListCommand() []string {
 	return nil
 }
 
+// Registry methods - not applicable on generic platforms
+func (genericAdapter) RegistryQueryCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (genericAdapter) RegistryQueryRecursiveCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (genericAdapter) RegistryDeleteKeyCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (genericAdapter) RegistryDeleteValueCommand(rootKey, path, value string) []string {
+	return nil
+}
+
+func (genericAdapter) EnvGetCommand(name string, systemScope bool) []string {
+	return nil
+}
+
+func (genericAdapter) HostsFilePath() string {
+	return "/etc/hosts"
+}
+
 func itoa(value int) string {
 	if value == 0 {
 		return "0"

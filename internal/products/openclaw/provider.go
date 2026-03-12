@@ -102,6 +102,21 @@ func (Provider) Facts() model.ProductFacts {
 		},
 		// OpenClaw's known gateway and IPC ports
 		ListenerPorts: []int{18789, 19001, 19002},
+		// Windows registry paths
+		RegistryPaths: []string{
+			"HKCU\\Software\\OpenClaw",
+			"HKCU\\Software\\ai.openclaw",
+			"HKLM\\SOFTWARE\\OpenClaw",
+			"HKLM\\SOFTWARE\\WOW6432Node\\OpenClaw",
+			"HKLM\\SOFTWARE\\ai.openclaw",
+		},
+		// Environment variables
+		EnvVarNames: []string{
+			"OPENCLAW_PATH",
+			"OPENCLAW_HOME",
+			"OPENCLAW_CONFIG",
+			"OPENCLAW_API_KEY",
+		},
 	}
 }
 

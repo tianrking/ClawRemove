@@ -40,3 +40,29 @@ func (darwinAdapter) ListenerCommands() [][]string {
 func (darwinAdapter) ScheduledTaskListCommand() []string {
 	return nil
 }
+
+// Registry methods - not applicable on macOS
+func (darwinAdapter) RegistryQueryCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (darwinAdapter) RegistryQueryRecursiveCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (darwinAdapter) RegistryDeleteKeyCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (darwinAdapter) RegistryDeleteValueCommand(rootKey, path, value string) []string {
+	return nil
+}
+
+func (darwinAdapter) EnvGetCommand(name string, systemScope bool) []string {
+	// On macOS/Linux, we read environment from shell
+	return []string{"sh", "-c", "echo \"$" + name + "\""}
+}
+
+func (darwinAdapter) HostsFilePath() string {
+	return "/etc/hosts"
+}

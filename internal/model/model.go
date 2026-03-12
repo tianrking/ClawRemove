@@ -39,6 +39,10 @@ type ProductFacts struct {
 	CLIPaths          []string
 	PackageRefs       []PackageRef
 	ListenerPorts     []int
+	// Windows-specific
+	RegistryPaths []string // Registry paths to scan (e.g., "HKCU\\Software\\OpenClaw")
+	// Environment
+	EnvVarNames []string // Environment variable names to check (e.g., "OPENCLAW_PATH")
 }
 
 type PackageRef struct {
@@ -74,6 +78,22 @@ type ImageRef struct {
 	Name    string `json:"name"`
 }
 
+// RegistryRef represents a Windows registry key or value.
+type RegistryRef struct {
+	RootKey string `json:"rootKey"` // HKLM, HKCU, HKCR, HKU, HKCC
+	Path    string `json:"path"`    // Subkey path
+	Value   string `json:"value,omitempty"`   // Value name (empty for default)
+	Data    string `json:"data,omitempty"`    // Value data
+	Type    string `json:"type,omitempty"`    // REG_SZ, REG_DWORD, etc.
+}
+
+// EnvVarRef represents an environment variable reference.
+type EnvVarRef struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Scope string `json:"scope,omitempty"` // "user" or "system" (Windows)
+}
+
 type Discovery struct {
 	Platform      string         `json:"platform"`
 	HomeDir       string         `json:"homeDir"`
@@ -90,15 +110,19 @@ type Discovery struct {
 	CrontabLines  []string       `json:"crontabLines"`
 	Containers    []ContainerRef `json:"containers"`
 	Images        []ImageRef     `json:"images"`
+	RegistryKeys  []RegistryRef  `json:"registryKeys,omitempty"`  // Windows only
+	EnvVars       []EnvVarRef    `json:"envVars,omitempty"`       // Environment variables
+	HostsEntries  []string       `json:"hostsEntries,omitempty"`  // Hosts file entries
 }
 
 type ActionKind string
 
 const (
-	ActionRemovePath ActionKind = "remove_path"
-	ActionRunCommand ActionKind = "run_command"
-	ActionEditFile   ActionKind = "edit_file"
-	ActionReportOnly ActionKind = "report_only"
+	ActionRemovePath    ActionKind = "remove_path"
+	ActionRunCommand    ActionKind = "run_command"
+	ActionEditFile      ActionKind = "edit_file"
+	ActionReportOnly    ActionKind = "report_only"
+	ActionRemoveRegistry ActionKind = "remove_registry" // Windows registry key/value removal
 )
 
 type Action struct {

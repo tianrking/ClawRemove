@@ -53,6 +53,9 @@ func (d Discoverer) Discover(ctx context.Context) (model.Discovery, error) {
 		CrontabLines:  d.discoverCrontab(ctx),
 		Containers:    d.discoverContainers(ctx),
 		Images:        d.discoverImages(ctx),
+		RegistryKeys:  d.discoverRegistryKeys(ctx),
+		EnvVars:       d.discoverEnvVars(ctx),
+		HostsEntries:  d.discoverHostsEntries(ctx),
 	}, nil
 }
 
@@ -211,6 +214,7 @@ func (d Discoverer) discoverDarwinServices(home string) []model.ServiceRef {
 	}{
 		{scope: "user", dir: filepath.Join(home, "Library", "LaunchAgents")},
 		{scope: "system", dir: "/Library/LaunchAgents"},
+		{scope: "system", dir: "/Library/LaunchDaemons"},
 	}
 	for _, item := range dirs {
 		entries, _ := os.ReadDir(item.dir)
@@ -229,6 +233,41 @@ func (d Discoverer) discoverDarwinServices(home string) []model.ServiceRef {
 			}
 		}
 	}
+
+	// Also check for running launchd services
+	if d.runner.Exists(context.Background(), "launchctl") {
+		result := d.runner.Run(context.Background(), "launchctl", "list")
+		if result.OK {
+			for _, line := range strings.Split(result.Stdout, "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "PID") {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) >= 3 {
+					serviceName := fields[2]
+					if hasMarker(strings.ToLower(serviceName), d.facts.Markers) {
+						// Check if we haven't already added this service
+						found := false
+						for _, s := range out {
+							if s.Name == serviceName {
+								found = true
+								break
+							}
+						}
+						if !found {
+							out = append(out, model.ServiceRef{
+								Platform: "darwin",
+								Scope:    "user",
+								Name:     serviceName,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return uniqServices(out)
 }
 
@@ -242,25 +281,88 @@ func (d Discoverer) discoverLinuxServices(home string) []model.ServiceRef {
 		{scope: "system", dir: "/etc/systemd/system"},
 		{scope: "system", dir: "/usr/lib/systemd/system"},
 		{scope: "system", dir: "/lib/systemd/system"},
+		{scope: "system", dir: "/run/systemd/system"},
 	}
 	for _, item := range dirs {
 		entries, _ := os.ReadDir(item.dir)
 		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".service") {
+			if entry.IsDir() {
 				continue
 			}
-			name := strings.TrimSuffix(entry.Name(), ".service")
-			if hasMarker(strings.ToLower(name), d.facts.Markers) {
-				out = append(out, model.ServiceRef{
+			name := entry.Name()
+			// Check for .service, .timer, and .socket files
+			isService := strings.HasSuffix(name, ".service")
+			isTimer := strings.HasSuffix(name, ".timer")
+			isSocket := strings.HasSuffix(name, ".socket")
+
+			if !isService && !isTimer && !isSocket {
+				continue
+			}
+
+			baseName := name
+			for _, suffix := range []string{".service", ".timer", ".socket"} {
+				baseName = strings.TrimSuffix(baseName, suffix)
+			}
+
+			if hasMarker(strings.ToLower(baseName), d.facts.Markers) {
+				ref := model.ServiceRef{
 					Platform: "linux",
 					Scope:    item.scope,
-					Name:     name,
-					Path:     filepath.Join(item.dir, entry.Name()),
-				})
+					Name:     baseName,
+					Path:     filepath.Join(item.dir, name),
+				}
+				if isTimer {
+					ref.Name = name // Keep full name for timers
+				}
+				out = append(out, ref)
 			}
 		}
 	}
+
+	// Also check for running systemd services
+	if d.runner.Exists(context.Background(), "systemctl") {
+		// Check user services
+		result := d.runner.Run(context.Background(), "systemctl", "--user", "list-units", "--type=service", "--no-pager")
+		if result.OK {
+			out = append(out, parseSystemdUnits(result.Stdout, "user", d.facts.Markers)...)
+		}
+
+		// Check system services
+		result = d.runner.Run(context.Background(), "systemctl", "list-units", "--type=service", "--no-pager")
+		if result.OK {
+			out = append(out, parseSystemdUnits(result.Stdout, "system", d.facts.Markers)...)
+		}
+	}
+
 	return uniqServices(out)
+}
+
+// parseSystemdUnits parses systemctl list-units output.
+func parseSystemdUnits(output, scope string, markers []string) []model.ServiceRef {
+	var out []model.ServiceRef
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "UNIT") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 1 {
+			continue
+		}
+		unitName := fields[0]
+		if !strings.HasSuffix(unitName, ".service") {
+			continue
+		}
+		serviceName := strings.TrimSuffix(unitName, ".service")
+		if hasMarker(strings.ToLower(serviceName), markers) {
+			out = append(out, model.ServiceRef{
+				Platform: "linux",
+				Scope:    scope,
+				Name:     serviceName,
+			})
+		}
+	}
+	return out
 }
 
 func (d Discoverer) discoverWindowsServices(ctx context.Context) []model.ServiceRef {
@@ -653,6 +755,245 @@ func dedupe(items []string) []string {
 			continue
 		}
 		seen[item] = struct{}{}
+		out = append(out, item)
+	}
+	return out
+}
+
+// discoverRegistryKeys discovers Windows registry keys related to the product.
+func (d Discoverer) discoverRegistryKeys(ctx context.Context) []model.RegistryRef {
+	if d.host.OS != "windows" {
+		return nil
+	}
+
+	var out []model.RegistryRef
+
+	// Scan provider-defined registry paths
+	for _, regPath := range d.facts.RegistryPaths {
+		parts := strings.SplitN(regPath, "\\", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		rootKey := parts[0]
+		path := parts[1]
+
+		cmd := d.adapter.RegistryQueryRecursiveCommand(rootKey, path)
+		if len(cmd) == 0 || !d.runner.Exists(ctx, cmd[0]) {
+			continue
+		}
+
+		result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
+		if !result.OK {
+			continue
+		}
+
+		// Parse registry output and create refs
+		out = append(out, parseRegistryOutput(result.Stdout, rootKey, path)...)
+	}
+
+	// Scan common locations for product markers
+	commonPaths := []struct {
+		rootKey string
+		path    string
+	}{
+		{"HKCU", "Software"},
+		{"HKLM", "SOFTWARE"},
+		{"HKLM", "SOFTWARE\\WOW6432Node"},
+	}
+
+	for _, cp := range commonPaths {
+		cmd := d.adapter.RegistryQueryCommand(cp.rootKey, cp.path)
+		if len(cmd) == 0 || !d.runner.Exists(ctx, cmd[0]) {
+			continue
+		}
+
+		result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
+		if !result.OK {
+			continue
+		}
+
+		// Look for subkeys matching markers
+		for _, line := range strings.Split(result.Stdout, "\n") {
+			line = strings.TrimSpace(line)
+			if hasMarker(strings.ToLower(line), d.facts.Markers) {
+				// Extract the subkey name
+				if idx := strings.LastIndex(line, "\\"); idx >= 0 {
+					subkeyName := line[idx+1:]
+					out = append(out, model.RegistryRef{
+						RootKey: cp.rootKey,
+						Path:    cp.path + "\\" + subkeyName,
+					})
+				}
+			}
+		}
+	}
+
+	return uniqRegistryRefs(out)
+}
+
+// parseRegistryOutput parses Windows reg query output into registry refs.
+func parseRegistryOutput(output, rootKey, basePath string) []model.RegistryRef {
+	var out []model.RegistryRef
+	var currentPath string
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Check if this is a key path line
+		if strings.HasPrefix(line, rootKey+"\\") {
+			currentPath = strings.TrimPrefix(line, rootKey+"\\")
+			continue
+		}
+
+		// Check if this is a value line (format: "    ValueName    REG_TYPE    ValueData")
+		if strings.HasPrefix(line, "    ") && currentPath != "" {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				valueName := fields[0]
+				valueType := fields[1]
+				var valueData string
+				if len(fields) >= 3 {
+					valueData = strings.Join(fields[2:], " ")
+				}
+				out = append(out, model.RegistryRef{
+					RootKey: rootKey,
+					Path:    currentPath,
+					Value:   valueName,
+					Type:    valueType,
+					Data:    valueData,
+				})
+			}
+		}
+	}
+
+	return out
+}
+
+// discoverEnvVars discovers environment variables related to the product.
+func (d Discoverer) discoverEnvVars(ctx context.Context) []model.EnvVarRef {
+	var out []model.EnvVarRef
+
+	// Check provider-defined environment variable names
+	for _, name := range d.facts.EnvVarNames {
+		// Check user scope
+		cmd := d.adapter.EnvGetCommand(name, false)
+		if len(cmd) > 0 && d.runner.Exists(ctx, cmd[0]) {
+			result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
+			if result.OK && result.Stdout != "" {
+				value := strings.TrimSpace(result.Stdout)
+				if value != "" && hasMarker(strings.ToLower(value), d.facts.Markers) {
+					out = append(out, model.EnvVarRef{
+						Name:  name,
+						Value: value,
+						Scope: "user",
+					})
+				}
+			}
+		}
+
+		// Check system scope (Windows)
+		if d.host.OS == "windows" {
+			cmd := d.adapter.EnvGetCommand(name, true)
+			if len(cmd) > 0 && d.runner.Exists(ctx, cmd[0]) {
+				result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
+				if result.OK {
+					// Parse registry output for value
+					for _, line := range strings.Split(result.Stdout, "\n") {
+						line = strings.TrimSpace(line)
+						if strings.HasPrefix(line, name) {
+							fields := strings.Fields(line)
+							if len(fields) >= 3 {
+								value := strings.Join(fields[2:], " ")
+								if hasMarker(strings.ToLower(value), d.facts.Markers) {
+									out = append(out, model.EnvVarRef{
+										Name:  name,
+										Value: value,
+										Scope: "system",
+									})
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Also check PATH for product paths
+	pathCmd := d.adapter.EnvGetCommand("PATH", false)
+	if len(pathCmd) > 0 && d.runner.Exists(ctx, pathCmd[0]) {
+		result := d.runner.Run(ctx, pathCmd[0], pathCmd[1:]...)
+		if result.OK {
+			pathValue := strings.TrimSpace(result.Stdout)
+			for _, pathEntry := range strings.Split(pathValue, string(os.PathListSeparator)) {
+				if hasMarker(strings.ToLower(pathEntry), d.facts.Markers) {
+					out = append(out, model.EnvVarRef{
+						Name:  "PATH",
+						Value: pathEntry,
+						Scope: "user",
+					})
+				}
+			}
+		}
+	}
+
+	return uniqEnvVarRefs(out)
+}
+
+// discoverHostsEntries discovers hosts file entries related to the product.
+func (d Discoverer) discoverHostsEntries(ctx context.Context) []string {
+	hostsPath := d.adapter.HostsFilePath()
+	if hostsPath == "" {
+		return nil
+	}
+
+	content, err := os.ReadFile(hostsPath)
+	if err != nil {
+		return nil
+	}
+
+	var out []string
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Check if the line contains a marker
+		if hasMarker(strings.ToLower(line), d.facts.Markers) {
+			out = append(out, line)
+		}
+	}
+
+	return dedupe(out)
+}
+
+func uniqRegistryRefs(items []model.RegistryRef) []model.RegistryRef {
+	seen := map[string]struct{}{}
+	var out []model.RegistryRef
+	for _, item := range items {
+		key := item.RootKey + "|" + item.Path + "|" + item.Value
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, item)
+	}
+	return out
+}
+
+func uniqEnvVarRefs(items []model.EnvVarRef) []model.EnvVarRef {
+	seen := map[string]struct{}{}
+	var out []model.EnvVarRef
+	for _, item := range items {
+		key := item.Name + "|" + item.Scope + "|" + item.Value
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
 		out = append(out, item)
 	}
 	return out

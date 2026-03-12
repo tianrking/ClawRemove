@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/products/nanobot"
 	"github.com/tianrking/ClawRemove/internal/products/openclaw"
+	"github.com/tianrking/ClawRemove/internal/products/picoclaw"
 	"github.com/tianrking/ClawRemove/internal/skills"
 	"github.com/tianrking/ClawRemove/internal/tools"
 	"github.com/tianrking/ClawRemove/internal/verify"
@@ -23,6 +25,8 @@ type Provider interface {
 func Registry() []Provider {
 	return []Provider{
 		openclaw.Provider{},
+		nanobot.Provider{},
+		picoclaw.Provider{},
 	}
 }
 

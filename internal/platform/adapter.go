@@ -10,6 +10,15 @@ type Adapter interface {
 	ProcessTerminateCommand(pid int) []string
 	ListenerCommands() [][]string
 	ScheduledTaskListCommand() []string
+	// Registry methods (Windows only, return nil on other platforms)
+	RegistryQueryCommand(rootKey, path string) []string
+	RegistryQueryRecursiveCommand(rootKey, path string) []string
+	RegistryDeleteKeyCommand(rootKey, path string) []string
+	RegistryDeleteValueCommand(rootKey, path, value string) []string
+	// Environment methods
+	EnvGetCommand(name string, systemScope bool) []string
+	// Hosts file
+	HostsFilePath() string
 }
 
 func NewAdapter(host Host) Adapter {

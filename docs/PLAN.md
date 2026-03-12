@@ -2,19 +2,19 @@
 
 ## Latest Progress
 
-- Added `internal/evidence` and moved verification/classification flow to consume evidence.
-- Updated planning to consume evidence and attach full provenance to actions.
-- Split LLM stack into clearer layers with `internal/llm/prompts` and `internal/llm/providers`.
-- Split tool mediation into `internal/llm/mediation` so reactor focuses on orchestration.
-- Added platform adapters (`darwin`, `linux`, `windows`) and routed controlled probes, discovery, and planning through adapters.
-- Added multi-driver LLM support direction and implementation baseline for `openai`, `anthropic`, `openrouter`, `zhipu`, and `openai-compatible`.
-- Added confidence-based planning policy that downgrades low-confidence destructive actions to report-only.
-- Added optional provider/model routing trace output for multi-driver LLM chains.
-- **Smart discovery improvements**: shell profiles are now only included if they actually contain provider markers (content-scan); listener port matching is now driven by `ProductFacts.ListenerPorts` declared by each provider; workspace discovery is generalized to use `ProductFacts.WorkspaceDirNames` instead of hard-coded `.openclaw` paths.
+- **Multi-Provider Architecture**: ClawRemove is now an Agent Removal Framework supporting multiple AI agents.
+- **New Providers Added**: NanoBot and PicoClaw providers added alongside OpenClaw.
+- **Windows Registry Support**: Added Windows registry detection and cleanup capabilities.
+- **Environment Variable Detection**: Added environment variable discovery for all platforms.
+- **Hosts File Detection**: Added hosts file entry detection.
+- **Enhanced Service Discovery**: Improved macOS launchd, Linux systemd (including timers/sockets), and Windows scheduled task detection.
+- **Platform Adapter Interface**: Extended with registry, environment, and hosts file methods.
+- **Unit Tests**: Added comprehensive unit tests for executor and discovery packages.
+- **Runner Interface**: Refactored system.Runner to interface for better testability.
 
 ## Mission
 
-ClawRemove exists to be the cleanest and most trustworthy claw-family removal engine on macOS, Linux, and Windows.
+ClawRemove exists to be the cleanest and most trustworthy AI agent removal engine on macOS, Linux, and Windows.
 
 The product goal is narrow by design:
 
@@ -25,11 +25,21 @@ The product goal is narrow by design:
 
 ClawRemove is not a generic "PC cleaner", not a system tuner, and not a resident management agent.
 
-It should behave like a controlled uninstall claw:
+It should behave like a controlled uninstall tool:
 
-- smart enough to reason about claw-agent footprints
+- smart enough to reason about AI agent footprints
 - strict enough to avoid unbounded system changes
 - quiet enough to leave no new mess behind
+
+## Supported AI Agents
+
+ClawRemove currently supports removal of:
+
+| Provider | State Dir | Config | Env Prefix | Default Port | Package Manager |
+|----------|-----------|--------|------------|--------------|-----------------|
+| OpenClaw | ~/.openclaw | openclaw.json | OPENCLAW_ | 18789 | npm, brew |
+| NanoBot | ~/.nanobot | config.json | NANOBOT_ | 18790 | pip, pipx |
+| PicoClaw | ~/.picoclaw | config.json | PICOCLAW_ | 18790 | binary |
 
 ## Product Direction
 
@@ -42,9 +52,7 @@ ClawRemove should feel predictable, surgical, and quiet:
 - no destructive action without explicit reasoning
 - no LLM authority over destructive execution
 
-The long-term direction is a reusable removal engine with pluggable product providers.
-
-The first provider is `openclaw`. Future providers can include other claw-family products, but OpenClaw remains the current quality benchmark.
+The long-term direction is a reusable removal engine with pluggable product providers for AI agents.
 
 ## Non-Negotiable Engineering Standards
 
@@ -64,11 +72,14 @@ cmd/claw-remove
 internal/app
 internal/core
 internal/discovery
+internal/evidence
 internal/plan
 internal/executor
 internal/output
 internal/platform
 internal/products/openclaw
+internal/products/nanobot
+internal/products/picoclaw
 internal/products/<future-provider>
 internal/skills
 internal/tools
@@ -93,9 +104,9 @@ scripts
 
 Implemented today:
 
-- provider registry
-- `openclaw` provider
-- audit, plan, apply, verify commands
+- provider registry with multi-provider support
+- `openclaw`, `nanobot`, `picoclaw` providers
+- audit, plan, apply, verify, explain commands
 - JSON and human-readable output
 - multi-platform build scripts
 - baseline CI
@@ -110,101 +121,46 @@ Implemented today:
 - multi-driver LLM configuration and fallback-chain capability
 - version metadata injected into binaries
 - generated checksums and release archives
-- expanded OpenClaw legacy aliases and app paths
-- transitioned `internal/skills` and `internal/tools` into runtime executable contracts
-- deeper platform-specific service discovery edge cases and test coverage map (96.1% coverage)
-- stable contributor workflow for adding new providers (`docs/PROVIDER_AUTHORING.md`)
-- provider conformance test suite (`internal/products/conformance_test.go`)
-- JSON machine-consumable output contract documentation (`docs/OUTPUT_SCHEMA.md`)
-- provider-specific verification rules (`internal/verify/verify.go`)
-- clean separation between engine and CLI rendering using `internal/output`
-- smart discovery: shell profiles validated by content scan, listener ports declared per-provider, workspace dirs generalized across providers
-- marker-driven shell profile cleanup with backup-before-write safety; `Action.Markers` now carries provider context end-to-end
-
-Still missing or incomplete:
+- Windows registry detection and cleanup
+- Environment variable detection
+- Hosts file entry detection
+- Enhanced service discovery (launchd, systemd, scheduled tasks)
+- Comprehensive unit tests for executor and discovery
 
 ## Delivery Phases
 
-### Phase 1: Release-Ready OpenClaw CLI
+### Phase 1: Release-Ready CLI ✅
 
-Goal: ship a reliable CLI that can be used in real environments for OpenClaw removal.
+Goal: ship a reliable CLI that can be used in real environments for AI agent removal.
 
-Work items:
+Status: Complete
 
-- strengthen `verify` so it is not only a second audit pass
-- expand OpenClaw historical naming coverage
-- refine risk labeling for actions
-- add more exact and strong evidence markers
-- improve Windows scheduled-task and service cleanup coverage
-- improve Linux service variants and user/system scope coverage
-- improve macOS launch agent and app residue coverage
-- package version metadata into binaries
-- generate checksums and release archives
-
-Exit criteria:
-
-- cross-platform build artifacts are reproducible
-- all supported commands have stable JSON output
-- README examples match real CLI behavior
-- CI validates tests and build on each push
-
-### Phase 2: Engine Hardening
+### Phase 2: Engine Hardening ✅
 
 Goal: make the core engine robust enough for multiple providers.
 
-Work items:
+Status: Complete
 
-- formalize `ProductProvider` and evidence interfaces
-- formalize provider skills and tool contracts
-- add a `platform` adapter layer
-- add a dedicated `evidence` layer between discovery and planning
-- split exact, strong, and heuristic evidence into explicit types
-- standardize action metadata: reason, evidence, risk, opt-in requirement
-- add regression tests around discovery and planning
-- add snapshot tests for JSON output
-
-Exit criteria:
-
-- provider logic is isolated from engine logic
-- new providers can be added without editing core planning semantics
-- output schema changes are intentional and reviewed
-
-### Phase 3: Controlled AI Advisor
+### Phase 3: Controlled AI Advisor ✅
 
 Goal: add ReAct-style assistance without turning ClawRemove into an unsafe autonomous agent.
 
-Work items:
+Status: Complete
 
-- add an `internal/llm` package with provider-agnostic interfaces and multi-model routing
-- define a strict tool schema for read-only evidence gathering
-- keep destructive execution outside the LLM boundary
-- add an `explain` or `advisor` flow for operator guidance
-- make model output structured and machine-validated
-- document safe prompt and tool rules
-- let advisors consume provider-declared skills and tool inventories
-- split the current LLM subsystem into prompts, providers, and reactor packages
+### Phase 4: Multi-Provider Expansion 🔄
 
-Exit criteria:
-
-- the LLM can explain findings without being able to directly mutate the system
-- advisory output is deterministic enough to be reviewed and logged
-- execution remains owned by the core engine
-### Phase 4: Multi-Provider Expansion
-
-Goal: support additional claw-family products without compromising safety.
+Goal: support additional AI agent products without compromising safety.
 
 Work items:
 
-- document provider authoring rules
-- add provider fixtures and conformance tests
-- add one additional provider only after OpenClaw quality is strong
-- add provider-specific verification rules
-
-Exit criteria:
-
-- adding a provider is a bounded change
-- provider discovery does not regress existing products
-- heuristics remain report-only unless promoted by strong evidence
+- [x] OpenClaw provider
+- [x] NanoBot provider
+- [x] PicoClaw provider
+- [ ] AutoGPT provider
+- [ ] LangGraph agents provider
+- [ ] Ollama agents provider
+- [x] Provider fixtures and conformance tests
+- [x] Provider-specific verification rules
 
 ### Phase 5: Desktop Controller Readiness
 
@@ -212,21 +168,20 @@ Goal: prepare the engine for a future GUI or upper-computer controller.
 
 Work items:
 
-- stabilize internal request and response models
-- preserve clean separation between engine and CLI rendering
-- ensure every action can be surfaced in UI with reason and risk
-- document machine-consumable output contracts
-
-Exit criteria:
-
-- GUI can call the same engine flows without forking business logic
-- output remains understandable to both humans and automation
+- [ ] stabilize internal request and response models
+- [x] preserve clean separation between engine and CLI rendering
+- [ ] ensure every action can be surfaced in UI with reason and risk
+- [x] document machine-consumable output contracts
 
 ## Immediate Backlog
 
 Priority order for the next development iterations:
 
-1. Add `executor` and `discovery` unit tests to improve coverage on these newly-enhanced packages.
+1. Add AutoGPT provider
+2. Add LangGraph agents provider
+3. Add Ollama agents provider
+4. Improve Windows registry cleanup coverage
+5. Add GUI/daemon removal detection
 
 ## Rules For Agents
 

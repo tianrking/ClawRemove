@@ -13,13 +13,22 @@ type CommandResult struct {
 	Stderr string
 }
 
-type Runner struct{}
-
-func NewRunner() Runner {
-	return Runner{}
+// Runner is an interface for executing system commands.
+// This allows for mocking in tests.
+type Runner interface {
+	Run(ctx context.Context, name string, args ...string) CommandResult
+	Exists(ctx context.Context, name string) bool
 }
 
-func (Runner) Run(ctx context.Context, name string, args ...string) CommandResult {
+// RealRunner is the production implementation of Runner.
+type RealRunner struct{}
+
+// NewRunner creates a new Runner instance.
+func NewRunner() Runner {
+	return RealRunner{}
+}
+
+func (RealRunner) Run(ctx context.Context, name string, args ...string) CommandResult {
 	cmd := exec.CommandContext(ctx, name, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -44,7 +53,7 @@ func (Runner) Run(ctx context.Context, name string, args ...string) CommandResul
 	return result
 }
 
-func (r Runner) Exists(ctx context.Context, name string) bool {
+func (r RealRunner) Exists(ctx context.Context, name string) bool {
 	checker := "which"
 	args := []string{name}
 	if isWindows() {

@@ -48,3 +48,29 @@ func (linuxAdapter) ListenerCommands() [][]string {
 func (linuxAdapter) ScheduledTaskListCommand() []string {
 	return nil
 }
+
+// Registry methods - not applicable on Linux
+func (linuxAdapter) RegistryQueryCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (linuxAdapter) RegistryQueryRecursiveCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (linuxAdapter) RegistryDeleteKeyCommand(rootKey, path string) []string {
+	return nil
+}
+
+func (linuxAdapter) RegistryDeleteValueCommand(rootKey, path, value string) []string {
+	return nil
+}
+
+func (linuxAdapter) EnvGetCommand(name string, systemScope bool) []string {
+	// On Linux, we read environment from shell
+	return []string{"sh", "-c", "echo \"$" + name + "\""}
+}
+
+func (linuxAdapter) HostsFilePath() string {
+	return "/etc/hosts"
+}
