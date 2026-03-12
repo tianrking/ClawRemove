@@ -64,30 +64,44 @@ Ahora cada provider no solo describe hechos y reglas, sino tambien skills y tool
 - La salida JSON es útil para automatización y futuras interfaces
 - La estructura del repositorio facilita iteración continua con agentes
 
-## Análisis con IA
+## Análisis con IA (Opcional)
 
-ClawRemove incluye una capa de análisis potenciada por IA para inspección mejorada del entorno.
+ClawRemove puede usar IA para explicar hallazgos en lenguaje sencillo. Esto es **opcional** - todas las funciones principales funcionan sin IA.
 
-### Principio clave: Solo Asesoramiento
+### Funciones Principales (Sin LLM)
 
-La capa LLM es **solo asesoramiento** - puede explicar hallazgos y sugerir acciones, pero:
-- ✅ Puede explicar lo que se descubrió
-- ✅ Puede sugerir qué revisar
-- ✅ Puede ayudar a clasificar items inciertos
-- ❌ No puede ejecutar comandos destructivos directamente
-- ❌ No puede bypassar el motor determinista
+| Comando | Descripción |
+|---------|-------------|
+| `claw-remove environment` | Inspección completa del entorno |
+| `claw-remove inventory` | Inventario de runtime y agentes |
+| `claw-remove security` | Auditoría de exposición de API keys |
+| `claw-remove hygiene` | Análisis de uso de almacenamiento |
+| `claw-remove audit --product X` | Descubrir residuos |
+| `claw-remove plan --product X` | Generar plan de eliminación |
+| `claw-remove apply --product X` | Ejecutar limpieza |
+| `claw-remove verify --product X` | Verificar resultados |
 
-Esto hace que ClawRemove sea inteligente como un agente, pero seguro como una herramienta del sistema.
+### Funciones con IA (Requiere LLM)
 
-### Capacidades Implementadas
+| Comando | Descripción |
+|---------|-------------|
+| `claw-remove explain --ai` | Explicar hallazgos en lenguaje sencillo |
+| `claw-remove audit --ai` | Auditoría + explicación IA |
+| `claw-remove verify --ai` | Verificación + explicación IA |
 
-- Soporte para múltiples proveedores LLM (OpenAI, Anthropic, OpenRouter, Zhipu)
-- Bucle ReAct controlado
-- Protocolo de herramientas de solo lectura
-- Metadata de skills y tools por provider
-- El modelo no puede obtener permisos de ejecución destructiva
+### Lo que la IA Puede y No Puede Hacer
 
-### Uso
+**La IA Puede:**
+- ✅ Explicar lo que se descubrió en términos simples
+- ✅ Sugerir qué revisar o limpiar
+- ✅ Ayudar a clasificar items inciertos
+
+**La IA No Puede:**
+- ❌ Ejecutar comandos destructivos
+- ❌ Saltar verificaciones de seguridad
+- ❌ Modificar tu sistema
+
+### Configuración Rápida
 
 ```bash
 # Auditoría mejorada con análisis IA

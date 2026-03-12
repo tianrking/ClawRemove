@@ -206,17 +206,38 @@ Shared flags:
 
 ClawRemove can use AI to explain findings in plain language. This is **optional** - all core features work without AI.
 
-### What AI Does
+### Core Features (No LLM Required)
 
-- Explains what was discovered in simple terms
-- Suggests what to review or clean
-- Helps classify uncertain items
+| Command | Description |
+|---------|-------------|
+| `claw-remove environment` | Full environment inspection |
+| `claw-remove inventory` | AI runtime and agent inventory |
+| `claw-remove security` | API key exposure audit |
+| `claw-remove hygiene` | Storage usage analysis |
+| `claw-remove audit --product X` | Discover residuals |
+| `claw-remove plan --product X` | Generate deletion plan |
+| `claw-remove apply --product X` | Execute cleanup |
+| `claw-remove verify --product X` | Verify cleanup results |
 
-### What AI Cannot Do
+### AI-Enhanced Features (Requires LLM)
 
-- ❌ Cannot execute destructive commands
-- ❌ Cannot bypass safety checks
-- ❌ Cannot modify your system
+| Command | Description |
+|---------|-------------|
+| `claw-remove explain --ai` | Explain findings in plain language |
+| `claw-remove audit --ai` | Audit + AI explanation |
+| `claw-remove verify --ai` | Verify + AI explanation |
+
+### What AI Can and Cannot Do
+
+**AI Can:**
+- ✅ Explain what was discovered in simple terms
+- ✅ Suggest what to review or clean
+- ✅ Help classify uncertain items
+
+**AI Cannot:**
+- ❌ Execute destructive commands
+- ❌ Bypass safety checks
+- ❌ Modify your system
 
 ### Quick Setup
 

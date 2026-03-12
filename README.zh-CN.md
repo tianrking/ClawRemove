@@ -66,17 +66,38 @@ ClawRemove 目前处于持续建设阶段。
 
 ClawRemove 可以使用 AI 来解释发现结果。这是**可选功能** - 所有核心功能无需 AI 也能工作。
 
-### AI 能做什么
+### 核心功能（无需 LLM）
 
-- 用简单语言解释发现了什么
-- 建议需要关注或清理的内容
-- 帮助分类不确定的项目
+| 命令 | 说明 |
+|------|------|
+| `claw-remove environment` | 完整环境检测 |
+| `claw-remove inventory` | AI 运行时和 Agent 清单 |
+| `claw-remove security` | API Key 泄露审计 |
+| `claw-remove hygiene` | 存储使用分析 |
+| `claw-remove audit --product X` | 发现残留 |
+| `claw-remove plan --product X` | 生成删除计划 |
+| `claw-remove apply --product X` | 执行清理 |
+| `claw-remove verify --product X` | 验证清理结果 |
 
-### AI 不能做什么
+### AI 增强功能（需要 LLM）
 
-- ❌ 不能执行破坏性命令
-- ❌ 不能绕过安全检查
-- ❌ 不能修改你的系统
+| 命令 | 说明 |
+|------|------|
+| `claw-remove explain --ai` | 用自然语言解释发现结果 |
+| `claw-remove audit --ai` | 审计 + AI 解释 |
+| `claw-remove verify --ai` | 验证 + AI 解释 |
+
+### AI 能做什么 / 不能做什么
+
+**AI 能做：**
+- ✅ 用简单语言解释发现了什么
+- ✅ 建议需要关注或清理的内容
+- ✅ 帮助分类不确定的项目
+
+**AI 不能做：**
+- ❌ 执行破坏性命令
+- ❌ 绕过安全检查
+- ❌ 修改你的系统
 
 ### 快速配置
 
