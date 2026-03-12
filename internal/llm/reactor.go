@@ -8,12 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tianrking/ClawRemove/internal/llm/prompts"
+	llmproviders "github.com/tianrking/ClawRemove/internal/llm/providers"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type controlledAdvisor struct {
-	client chatClient
+	client llmproviders.Client
 	config Config
 	runner system.Runner
 }
@@ -35,7 +37,15 @@ func NewAdvisorFromEnv(runner system.Runner) Advisor {
 		return NewNoopAdvisor()
 	}
 	return controlledAdvisor{
-		client: newClientFromConfig(cfg),
+		client: llmproviders.NewFromConfig(llmproviders.Config{
+			Provider:       cfg.Provider,
+			BaseURL:        cfg.BaseURL,
+			APIKey:         cfg.APIKey,
+			Model:          cfg.Model,
+			MaxTokens:      cfg.MaxTokens,
+			TimeoutSeconds: int(cfg.Timeout.Seconds()),
+			UserAgent:      cfg.UserAgent,
+		}),
 		config: cfg,
 		runner: runner,
 	}
@@ -46,8 +56,8 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) mode
 	base.Mode = "react-controlled"
 	base.UserMessage = "Controlled advisor is enabled. Review its recommendations as guidance, not as execution authority."
 
-	systemPrompt := controlledSystemPrompt()
-	messages := []chatMessage{
+	systemPrompt := prompts.ControlledSystemPrompt()
+	messages := []llmproviders.Message{
 		{
 			Role: "user",
 			Content: fmt.Sprintf(
@@ -78,8 +88,8 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) mode
 				return base
 			}
 			messages = append(messages,
-				chatMessage{Role: "assistant", Content: content},
-				chatMessage{Role: "user", Content: fmt.Sprintf("Tool result for %s:\n%s", next.Tool, mustJSON(toolResult))},
+				llmproviders.Message{Role: "assistant", Content: content},
+				llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool result for %s:\n%s", next.Tool, mustJSON(toolResult))},
 			)
 		case "final":
 			return mergeAdvice(base, next)
@@ -93,26 +103,13 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) mode
 	return base
 }
 
-func controlledSystemPrompt() string {
-	return strings.Join([]string{
-		"You are ClawRemove Analyst, a controlled advisory model for a claw removal engine.",
-		"You are not allowed to approve or execute destructive actions.",
-		"You may only request read-only tools over the provided in-memory report.",
-		"You must respond with JSON only.",
-		"Valid response forms:",
-		`{"kind":"tool","thoughtSummary":"...","tool":"summary|verification|state_dirs|workspace_dirs|services|packages|processes|containers|plan_actions|path_probe|service_probe|package_probe|process_probe|shell_profile_probe","input":{"limit":20}}`,
-		`{"kind":"final","thoughtSummary":"...","neededEvidence":["..."],"riskNotes":["..."],"userMessage":"...","recommendations":[{"kind":"...","target":"...","reason":"...","risk":"low|medium|high","optIn":true,"evidence":"exact|strong|heuristic"}]}`,
-		"Prefer final answers once you have enough evidence.",
-		"If evidence is weak, say so and recommend review rather than deletion.",
-		"You may only probe targets that already exist in the report.",
-	}, "\n")
-}
-
 func reportContext(report model.Report) map[string]any {
 	return map[string]any{
 		"product": report.Product,
 		"command": report.Command,
 		"host":    report.Host,
+		"skills":  report.Capabilities.Skills,
+		"tools":   report.Capabilities.Tools,
 		"counts": map[string]int{
 			"stateDirs":     len(report.Discovery.StateDirs),
 			"workspaceDirs": len(report.Discovery.WorkspaceDirs),
@@ -122,6 +119,7 @@ func reportContext(report model.Report) map[string]any {
 			"containers":    len(report.Discovery.Containers),
 			"images":        len(report.Discovery.Images),
 			"planActions":   len(report.Plan.Actions),
+			"evidenceItems": len(report.Evidence.Items),
 			"confirmed":     len(report.Verify.Confirmed),
 			"investigate":   len(report.Verify.Investigate),
 		},

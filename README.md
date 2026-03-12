@@ -101,6 +101,8 @@ The first implementation of this architecture is now present:
 
 - multi-provider LLM support for OpenAI, Anthropic, and other OpenAI-compatible APIs
 - a controlled ReAct loop
+- an explicit `internal/evidence` layer
+- an initial `internal/llm/prompts` and `internal/llm/providers` split
 - a read-only tool protocol over in-memory discovery and plan data
 - provider-specific skills and tools metadata
 - a hard boundary that prevents the model from issuing destructive commands directly
@@ -282,7 +284,7 @@ Current state:
 - partially decoupled
 - still needs a dedicated evidence layer
 - still needs stronger platform adapters
-- still needs a cleaner split inside the LLM subsystem
+- still needs a fuller split inside the LLM subsystem
 
 ClawRemove is intentionally being shaped toward a stricter architecture now, before more providers and models make the code harder to untangle.
 
@@ -362,9 +364,12 @@ cmd/claw-remove            CLI entrypoint
 internal/app               CLI command wiring
 internal/core              engine orchestration
 internal/discovery         source-driven discovery layer
+internal/evidence          evidence building between discovery and plan
 internal/plan              safe action planning
 internal/executor          command and file execution
-internal/llm               controlled advisor, client, and ReAct loop
+internal/llm               advisor coordination
+internal/llm/prompts       prompt definitions
+internal/llm/providers     model provider clients
 internal/output            human and JSON reporting
 internal/platform          host and platform abstractions
 internal/products          provider registry

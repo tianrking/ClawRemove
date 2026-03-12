@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	llmproviders "github.com/tianrking/ClawRemove/internal/llm/providers"
 	"github.com/tianrking/ClawRemove/internal/model"
 )
 
@@ -12,7 +13,7 @@ type fakeClient struct {
 	index     int
 }
 
-func (f *fakeClient) CompleteJSON(_ context.Context, _ string, _ []chatMessage) (string, error) {
+func (f *fakeClient) CompleteJSON(_ context.Context, _ string, _ []llmproviders.Message) (string, error) {
 	response := f.responses[f.index]
 	f.index++
 	return response, nil

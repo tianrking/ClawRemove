@@ -7,15 +7,17 @@ import (
 )
 
 func TestClassifySplitsConfirmedAndInvestigate(t *testing.T) {
-	discovery := model.Discovery{
-		StateDirs:     []string{"/tmp/.openclaw"},
-		Packages:      []model.PackageRef{{Manager: "npm", Name: "openclaw"}},
-		Listeners:     []string{"tcp LISTEN 127.0.0.1:3456"},
-		ShellProfiles: []string{"/tmp/.zshrc"},
+	evidence := model.EvidenceSet{
+		Items: []model.Evidence{
+			{Kind: "state_dir", Target: "/tmp/.openclaw", Strength: "exact"},
+			{Kind: "package", Target: "npm:openclaw", Strength: "strong"},
+			{Kind: "listener", Target: "tcp LISTEN 127.0.0.1:3456", Strength: "heuristic"},
+			{Kind: "shell_profile", Target: "/tmp/.zshrc", Strength: "heuristic"},
+		},
+		Summary: model.EvidenceSummary{Exact: 1, Strong: 1, Heuristic: 2},
 	}
-	facts := model.ProductFacts{DisplayName: "OpenClaw"}
 
-	verification := Classify(discovery, facts)
+	verification := Classify(evidence)
 	if !verification.Verified {
 		t.Fatal("expected verification to be marked verified")
 	}

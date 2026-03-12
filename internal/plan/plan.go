@@ -7,31 +7,33 @@ import (
 	"github.com/tianrking/ClawRemove/internal/model"
 )
 
-func Build(discovery model.Discovery, facts model.ProductFacts, options model.Options) model.Plan {
+func Build(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) model.Plan {
 	var actions []model.Action
 
 	if !options.AuditOnly {
-		actions = append(actions, serviceActions(discovery, facts, options)...)
-		actions = append(actions, packageActions(discovery, facts, options)...)
+		actions = append(actions, serviceActions(discovery, evidence, facts, options)...)
+		actions = append(actions, packageActions(discovery, evidence, facts, options)...)
 		actions = append(actions, shellActions(discovery, options)...)
-		actions = append(actions, processActions(discovery, options)...)
-		actions = append(actions, containerActions(discovery, options)...)
-		actions = append(actions, pathActions(discovery, facts, options)...)
+		actions = append(actions, processActions(discovery, evidence, options)...)
+		actions = append(actions, containerActions(discovery, evidence, options)...)
+		actions = append(actions, pathActions(discovery, evidence, facts, options)...)
 	}
 
-	actions = append(actions, auditActions(discovery)...)
+	actions = append(actions, auditActions(evidence)...)
 	return model.Plan{Actions: actions}
 }
 
-func serviceActions(discovery model.Discovery, facts model.ProductFacts, options model.Options) []model.Action {
+func serviceActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) []model.Action {
 	var actions []model.Action
 	for _, service := range discovery.Services {
+		ev := matchEvidence(evidence, "service", service.Path, service.Platform+":"+service.Name)
 		switch service.Platform {
 		case "darwin":
 			actions = append(actions, model.Action{
 				Kind:     model.ActionRunCommand,
 				Target:   service.Name,
 				Reason:   "Unload " + facts.DisplayName + " launchd service",
+				Evidence: ev.Strength,
 				Command:  []string{"launchctl", "bootout", "gui/$UID/" + service.Name},
 				Platform: service.Platform,
 			})
@@ -45,6 +47,7 @@ func serviceActions(discovery model.Discovery, facts model.ProductFacts, options
 				Kind:     model.ActionRunCommand,
 				Target:   service.Name,
 				Reason:   "Disable " + facts.DisplayName + " systemd service",
+				Evidence: ev.Strength,
 				Command:  args,
 				Platform: service.Platform,
 			})
@@ -53,6 +56,7 @@ func serviceActions(discovery model.Discovery, facts model.ProductFacts, options
 				Kind:     model.ActionRunCommand,
 				Target:   service.Name,
 				Reason:   "Delete " + facts.DisplayName + " scheduled task",
+				Evidence: ev.Strength,
 				Command:  []string{"schtasks", "/Delete", "/F", "/TN", service.Name},
 				Platform: service.Platform,
 			})
@@ -62,6 +66,7 @@ func serviceActions(discovery model.Discovery, facts model.ProductFacts, options
 				Kind:     model.ActionRemovePath,
 				Target:   service.Path,
 				Reason:   "Remove " + facts.DisplayName + " service definition file",
+				Evidence: ev.Strength,
 				Platform: service.Platform,
 			})
 		}
@@ -69,12 +74,13 @@ func serviceActions(discovery model.Discovery, facts model.ProductFacts, options
 	return actions
 }
 
-func packageActions(discovery model.Discovery, facts model.ProductFacts, options model.Options) []model.Action {
+func packageActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) []model.Action {
 	if options.KeepCLI {
 		return nil
 	}
 	var actions []model.Action
 	for _, pkg := range discovery.Packages {
+		ev := matchEvidence(evidence, "package", pkg.Manager+":"+pkg.Name)
 		cmd := []string{pkg.Manager}
 		switch pkg.Manager {
 		case "npm":
@@ -96,6 +102,7 @@ func packageActions(discovery model.Discovery, facts model.ProductFacts, options
 			Kind:     model.ActionRunCommand,
 			Target:   pkg.Name,
 			Reason:   "Remove installed " + facts.DisplayName + " package",
+			Evidence: ev.Strength,
 			Command:  cmd,
 			Platform: runtime.GOOS,
 		})
@@ -118,7 +125,7 @@ func shellActions(discovery model.Discovery, options model.Options) []model.Acti
 	return actions
 }
 
-func processActions(discovery model.Discovery, options model.Options) []model.Action {
+func processActions(discovery model.Discovery, evidence model.EvidenceSet, options model.Options) []model.Action {
 	if !options.KillProcesses {
 		return nil
 	}
@@ -127,6 +134,7 @@ func processActions(discovery model.Discovery, options model.Options) []model.Ac
 		if proc.PID == 0 {
 			continue
 		}
+		ev := matchEvidence(evidence, "process", proc.Command)
 		command := []string{"kill", "-TERM", itoa(proc.PID)}
 		if runtime.GOOS == "windows" {
 			command = []string{"taskkill", "/PID", itoa(proc.PID), "/F"}
@@ -135,6 +143,7 @@ func processActions(discovery model.Discovery, options model.Options) []model.Ac
 			Kind:     model.ActionRunCommand,
 			Target:   proc.Command,
 			Reason:   "Terminate matching process",
+			Evidence: ev.Strength,
 			Command:  command,
 			HighRisk: true,
 			Risk:     "Kills live process",
@@ -143,14 +152,16 @@ func processActions(discovery model.Discovery, options model.Options) []model.Ac
 	return actions
 }
 
-func containerActions(discovery model.Discovery, options model.Options) []model.Action {
+func containerActions(discovery model.Discovery, evidence model.EvidenceSet, options model.Options) []model.Action {
 	var actions []model.Action
 	for _, container := range discovery.Containers {
+		ev := matchEvidence(evidence, "container", container.Runtime+":"+container.ID)
 		if !options.RemoveDocker {
 			actions = append(actions, model.Action{
 				Kind:     model.ActionReportOnly,
 				Target:   container.Runtime + ":" + container.ID,
 				Reason:   "Matching container detected; enable --remove-docker to delete",
+				Evidence: ev.Strength,
 				HighRisk: true,
 				Risk:     "Deletes container state",
 			})
@@ -160,17 +171,24 @@ func containerActions(discovery model.Discovery, options model.Options) []model.
 			Kind:     model.ActionRunCommand,
 			Target:   container.Runtime + ":" + container.ID,
 			Reason:   "Remove matching container",
+			Evidence: ev.Strength,
 			Command:  []string{container.Runtime, "rm", "-f", container.ID},
 			HighRisk: true,
 			Risk:     "Deletes container state",
 		})
 	}
 	for _, image := range discovery.Images {
+		name := image.Name
+		if image.ID != "" {
+			name = image.ID
+		}
+		ev := matchEvidence(evidence, "image", image.Runtime+":"+name)
 		if !options.RemoveDocker {
 			actions = append(actions, model.Action{
 				Kind:     model.ActionReportOnly,
 				Target:   image.Runtime + ":" + image.Name,
 				Reason:   "Matching image detected; enable --remove-docker to delete",
+				Evidence: ev.Strength,
 				HighRisk: true,
 				Risk:     "Deletes local image",
 			})
@@ -184,6 +202,7 @@ func containerActions(discovery model.Discovery, options model.Options) []model.
 			Kind:     model.ActionRunCommand,
 			Target:   image.Runtime + ":" + target,
 			Reason:   "Remove matching image",
+			Evidence: ev.Strength,
 			Command:  []string{image.Runtime, "rmi", "-f", target},
 			HighRisk: true,
 			Risk:     "Deletes local image",
@@ -192,52 +211,65 @@ func containerActions(discovery model.Discovery, options model.Options) []model.
 	return actions
 }
 
-func pathActions(discovery model.Discovery, facts model.ProductFacts, options model.Options) []model.Action {
+func pathActions(discovery model.Discovery, evidence model.EvidenceSet, facts model.ProductFacts, options model.Options) []model.Action {
 	var out []model.Action
-	appendRemove := func(paths []string, reason string) {
+	appendRemove := func(kind string, paths []string, reason string) {
 		for _, item := range paths {
+			ev := matchEvidence(evidence, kind, item)
 			out = append(out, model.Action{
-				Kind:   model.ActionRemovePath,
-				Target: item,
-				Reason: reason,
+				Kind:     model.ActionRemovePath,
+				Target:   item,
+				Reason:   reason,
+				Evidence: ev.Strength,
 			})
 		}
 	}
 
-	appendRemove(discovery.StateDirs, "Remove "+facts.DisplayName+" state directory")
+	appendRemove("state_dir", discovery.StateDirs, "Remove "+facts.DisplayName+" state directory")
 	if !options.KeepWorkspace {
-		appendRemove(discovery.WorkspaceDirs, "Remove "+facts.DisplayName+" workspace")
+		appendRemove("workspace_dir", discovery.WorkspaceDirs, "Remove "+facts.DisplayName+" workspace")
 	}
-	appendRemove(discovery.TempPaths, "Remove "+facts.DisplayName+" temp path")
+	appendRemove("temp_path", discovery.TempPaths, "Remove "+facts.DisplayName+" temp path")
 	if !options.KeepCLI {
-		appendRemove(discovery.CLIPaths, "Remove "+facts.DisplayName+" CLI wrapper")
+		appendRemove("cli_path", discovery.CLIPaths, "Remove "+facts.DisplayName+" CLI wrapper")
 	}
 	if !options.KeepApp {
-		appendRemove(discovery.AppPaths, "Remove "+facts.DisplayName+" app artifact")
+		appendRemove("app_path", discovery.AppPaths, "Remove "+facts.DisplayName+" app artifact")
 	}
 
 	return dedupeActions(out)
 }
 
-func auditActions(discovery model.Discovery) []model.Action {
+func auditActions(evidence model.EvidenceSet) []model.Action {
 	var actions []model.Action
-	for _, line := range discovery.Listeners {
-		actions = append(actions, model.Action{
-			Kind:   model.ActionReportOnly,
-			Target: line,
-			Reason: "Listener matched OpenClaw markers or default ports",
-		})
-	}
-	for _, line := range discovery.CrontabLines {
+	for _, item := range evidence.Items {
+		if item.Kind != "listener" && item.Kind != "crontab" && item.Kind != "image" && item.Kind != "shell_profile" {
+			continue
+		}
 		actions = append(actions, model.Action{
 			Kind:     model.ActionReportOnly,
-			Target:   line,
-			Reason:   "Crontab entry references OpenClaw markers",
-			HighRisk: true,
-			Risk:     "Manual review recommended before deletion",
+			Target:   item.Target,
+			Reason:   item.Reason,
+			Evidence: item.Strength,
+			HighRisk: item.Risk == "high",
+			Risk:     item.Risk,
 		})
 	}
 	return actions
+}
+
+func matchEvidence(evidence model.EvidenceSet, kind string, targets ...string) model.Evidence {
+	for _, item := range evidence.Items {
+		if item.Kind != kind {
+			continue
+		}
+		for _, target := range targets {
+			if target != "" && item.Target == target {
+				return item
+			}
+		}
+	}
+	return model.Evidence{}
 }
 
 func dedupeActions(actions []model.Action) []model.Action {

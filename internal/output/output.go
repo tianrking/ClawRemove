@@ -31,6 +31,7 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		fmt.Sprintf("Images: %d", len(report.Discovery.Images)),
 		fmt.Sprintf("Provider skills: %d", len(report.Capabilities.Skills)),
 		fmt.Sprintf("Provider tools: %d", len(report.Capabilities.Tools)),
+		fmt.Sprintf("Evidence: exact=%d strong=%d heuristic=%d", report.Evidence.Summary.Exact, report.Evidence.Summary.Strong, report.Evidence.Summary.Heuristic),
 		fmt.Sprintf("Verified residuals: exact=%d strong=%d heuristic=%d", report.Verify.Summary.Exact, report.Verify.Summary.Strong, report.Verify.Summary.Heuristic),
 		fmt.Sprintf("Planned actions: %d", len(report.Plan.Actions)),
 	}

@@ -92,17 +92,17 @@ Implemented today:
 - multi-provider LLM client for OpenAI, Anthropic, and OpenAI-compatible APIs
 - residual verification classifier with confirmed versus investigate buckets
 - provider capability model with provider-specific skills and tools
+- explicit `internal/evidence` layer and partial LLM split into prompts/providers/reactor
 - explicit architecture assessment in `docs/ARCHITECTURE.md`
 
 Still missing or incomplete:
 
-- a dedicated evidence layer between discovery and plan
 - stronger platform-specific adapters
 - formal release packaging and checksums
 - richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
 - a richer provider skill and tool authoring workflow
-- a cleaner split of prompts, providers, and reactor logic inside `internal/llm`
+- a fuller split of prompts, providers, and reactor logic inside `internal/llm`
 
 ## Delivery Phases
 
@@ -208,8 +208,8 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Add version injection and release packaging.
-2. Introduce a dedicated `internal/evidence` package.
-3. Split the current `internal/llm` package into prompts, providers, and reactor layers.
+2. Finish the transition so `plan` and `verify` consume evidence everywhere.
+3. Complete the `internal/llm` split into prompts, providers, and reactor subpackages.
 4. Introduce stronger `internal/platform/*` adapters.
 5. Turn `internal/skills` and `internal/tools` into real runtime contracts.
 6. Expand OpenClaw legacy aliases and service naming coverage.

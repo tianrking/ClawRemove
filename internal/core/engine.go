@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/tianrking/ClawRemove/internal/discovery"
+	"github.com/tianrking/ClawRemove/internal/evidence"
 	"github.com/tianrking/ClawRemove/internal/executor"
 	"github.com/tianrking/ClawRemove/internal/llm"
 	"github.com/tianrking/ClawRemove/internal/model"
@@ -36,8 +37,9 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 		return model.Report{}, err
 	}
 
-	executionPlan := plan.Build(discovered, provider.Facts(), options)
-	verification := verify.Classify(discovered, provider.Facts())
+	evidenceSet := evidence.Build(discovered, provider.Facts())
+	executionPlan := plan.Build(discovered, evidenceSet, provider.Facts(), options)
+	verification := verify.Classify(evidenceSet)
 	var results []model.Result
 	if options.Command == "apply" && !options.AuditOnly {
 		exec := executor.New(e.runner)
@@ -71,6 +73,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 			},
 			Capabilities: provider.Capabilities(),
 			Discovery:    discovered,
+			Evidence:     evidenceSet,
 			Verify:       verification,
 			Plan:         executionPlan,
 			Results:      results,
@@ -92,6 +95,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 		},
 		Capabilities: provider.Capabilities(),
 		Discovery:    discovered,
+		Evidence:     evidenceSet,
 		Verify:       verification,
 		Plan:         executionPlan,
 		Results:      results,

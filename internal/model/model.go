@@ -102,6 +102,7 @@ type Action struct {
 	Kind     ActionKind `json:"kind"`
 	Target   string     `json:"target"`
 	Reason   string     `json:"reason"`
+	Evidence string     `json:"evidence,omitempty"`
 	Command  []string   `json:"command,omitempty"`
 	Platform string     `json:"platform,omitempty"`
 	Risk     string     `json:"risk,omitempty"`
@@ -131,6 +132,7 @@ type Report struct {
 	Host         Host                 `json:"host"`
 	Capabilities ProviderCapabilities `json:"capabilities"`
 	Discovery    Discovery            `json:"discovery"`
+	Evidence     EvidenceSet          `json:"evidence"`
 	Verify       Verification         `json:"verify"`
 	Plan         Plan                 `json:"plan"`
 	Results      []Result             `json:"results"`

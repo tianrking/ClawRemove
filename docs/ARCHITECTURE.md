@@ -36,6 +36,23 @@ Conclusion:
 
 The codebase is not badly bloated, but some packages are beginning to accumulate too many responsibilities. This is the right time to lock in the target architecture before more features pile on.
 
+## Reference Influence
+
+After comparing the local `openclaw`, `nanobot`, and `picoclaw` trees, a few architectural patterns are worth keeping:
+
+- provider-centric organization
+- explicit `skills` and `tools` domains
+- separation between product logic and transport or UI layers
+- room for multiple model providers without tying the whole system to one API
+
+ClawRemove should borrow those structural strengths without inheriting their runtime sprawl.
+
+Because ClawRemove has a much narrower mission than those projects, its ideal architecture should stay smaller and stricter:
+
+- fewer subsystems
+- stronger deterministic boundaries
+- clearer removal-focused domain modeling
+
 ## Architectural Principles
 
 - deterministic engine owns execution
@@ -127,7 +144,7 @@ It should turn discovery output into explicit evidence objects:
 - provenance
 - related provider rule
 
-Today, `verify` partially does this work.
+This has now started landing as `internal/evidence`, but it still needs richer provenance and stronger integration across planning and verification.
 
 ### `plan`
 
@@ -209,6 +226,8 @@ The LLM system should eventually split into:
 
 The current implementation is good enough for now, but it is still concentrated in a single `reactor.go`.
 
+The split has started with dedicated `prompts` and `providers` packages, but tool mediation and reactor control still need a cleaner boundary.
+
 ## Coupling Review
 
 ### Good decoupling already present
@@ -242,11 +261,11 @@ This is what lets ClawRemove behave like a smart agent without turning into anot
 
 The next architectural refactor should follow this order:
 
-1. Introduce `internal/evidence` and move residual strength logic out of `verify`.
-2. Split `internal/llm/reactor.go` into `prompts`, `providers`, and `reactor`.
+1. Deepen `internal/evidence` so it carries provenance, provider rules, and stronger planning inputs.
+2. Finish splitting the LLM subsystem into `prompts`, `providers`, and `reactor`.
 3. Move OS-specific logic toward `internal/platform/*`.
 4. Turn `internal/skills` and `internal/tools` into real contracts, not only catalogs.
-5. Make `plan` consume evidence rather than raw discovery.
+5. Make `plan` consume evidence everywhere instead of relying on raw discovery lookups.
 
 ## Architecture Decision For This Version
 

@@ -1,4 +1,4 @@
-package llm
+package providers
 
 import (
 	"bytes"
@@ -7,10 +7,26 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
-type chatClient interface {
-	CompleteJSON(ctx context.Context, systemPrompt string, messages []chatMessage) (string, error)
+type Config struct {
+	Provider       string
+	BaseURL        string
+	APIKey         string
+	Model          string
+	MaxTokens      int
+	TimeoutSeconds int
+	UserAgent      string
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type Client interface {
+	CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error)
 }
 
 type openAICompatibleClient struct {
@@ -23,33 +39,26 @@ type anthropicClient struct {
 	config     Config
 }
 
-type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
 type chatCompletionRequest struct {
-	Model          string         `json:"model"`
-	Messages       []chatMessage  `json:"messages"`
-	ResponseFormat responseFormat `json:"response_format"`
-	MaxTokens      int            `json:"max_tokens,omitempty"`
-}
-
-type responseFormat struct {
-	Type string `json:"type"`
+	Model          string    `json:"model"`
+	Messages       []Message `json:"messages"`
+	ResponseFormat struct {
+		Type string `json:"type"`
+	} `json:"response_format"`
+	MaxTokens int `json:"max_tokens,omitempty"`
 }
 
 type chatCompletionResponse struct {
 	Choices []struct {
-		Message chatMessage `json:"message"`
+		Message Message `json:"message"`
 	} `json:"choices"`
 }
 
 type anthropicMessageRequest struct {
-	Model     string        `json:"model"`
-	System    string        `json:"system"`
-	Messages  []chatMessage `json:"messages"`
-	MaxTokens int           `json:"max_tokens"`
+	Model     string    `json:"model"`
+	System    string    `json:"system"`
+	Messages  []Message `json:"messages"`
+	MaxTokens int       `json:"max_tokens"`
 }
 
 type anthropicMessageResponse struct {
@@ -59,37 +68,39 @@ type anthropicMessageResponse struct {
 	} `json:"content"`
 }
 
-func newClientFromConfig(cfg Config) chatClient {
+func NewFromConfig(cfg Config) Client {
 	switch cfg.Provider {
 	case "anthropic":
 		return anthropicClient{
-			httpClient: &http.Client{Timeout: cfg.Timeout},
+			httpClient: &http.Client{Timeout: secondsToDuration(cfg.TimeoutSeconds)},
 			config:     cfg,
 		}
 	default:
-		return newOpenAICompatibleClient(cfg)
+		return openAICompatibleClient{
+			httpClient: &http.Client{Timeout: secondsToDuration(cfg.TimeoutSeconds)},
+			config:     cfg,
+		}
 	}
 }
 
-func newOpenAICompatibleClient(cfg Config) chatClient {
-	return openAICompatibleClient{
-		httpClient: &http.Client{Timeout: cfg.Timeout},
-		config:     cfg,
+func secondsToDuration(seconds int) time.Duration {
+	if seconds <= 0 {
+		seconds = 45
 	}
+	return time.Duration(seconds) * time.Second
 }
 
-func (c openAICompatibleClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []chatMessage) (string, error) {
+func (c openAICompatibleClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error) {
 	payload := chatCompletionRequest{
-		Model:          c.config.Model,
-		ResponseFormat: responseFormat{Type: "json_object"},
-		MaxTokens:      c.config.MaxTokens,
-		Messages:       append([]chatMessage{{Role: "system", Content: systemPrompt}}, messages...),
+		Model:     c.config.Model,
+		Messages:  append([]Message{{Role: "system", Content: systemPrompt}}, messages...),
+		MaxTokens: c.config.MaxTokens,
 	}
+	payload.ResponseFormat.Type = "json_object"
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("marshal llm request: %w", err)
 	}
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.config.BaseURL+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create llm request: %w", err)
@@ -97,13 +108,11 @@ func (c openAICompatibleClient) CompleteJSON(ctx context.Context, systemPrompt s
 	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.config.UserAgent)
-
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("send llm request: %w", err)
 	}
 	defer resp.Body.Close()
-
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read llm response: %w", err)
@@ -111,7 +120,6 @@ func (c openAICompatibleClient) CompleteJSON(ctx context.Context, systemPrompt s
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("llm request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
-
 	var parsed chatCompletionResponse
 	if err := json.Unmarshal(bodyBytes, &parsed); err != nil {
 		return "", fmt.Errorf("decode llm response: %w", err)
@@ -122,7 +130,7 @@ func (c openAICompatibleClient) CompleteJSON(ctx context.Context, systemPrompt s
 	return parsed.Choices[0].Message.Content, nil
 }
 
-func (c anthropicClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []chatMessage) (string, error) {
+func (c anthropicClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error) {
 	payload := anthropicMessageRequest{
 		Model:     c.config.Model,
 		System:    systemPrompt,
@@ -133,7 +141,6 @@ func (c anthropicClient) CompleteJSON(ctx context.Context, systemPrompt string, 
 	if err != nil {
 		return "", fmt.Errorf("marshal anthropic request: %w", err)
 	}
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.config.BaseURL+"/messages", bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create anthropic request: %w", err)
@@ -142,13 +149,11 @@ func (c anthropicClient) CompleteJSON(ctx context.Context, systemPrompt string, 
 	req.Header.Set("anthropic-version", "2023-06-01")
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("User-Agent", c.config.UserAgent)
-
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("send anthropic request: %w", err)
 	}
 	defer resp.Body.Close()
-
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read anthropic response: %w", err)
@@ -156,7 +161,6 @@ func (c anthropicClient) CompleteJSON(ctx context.Context, systemPrompt string, 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("anthropic request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
-
 	var parsed anthropicMessageResponse
 	if err := json.Unmarshal(bodyBytes, &parsed); err != nil {
 		return "", fmt.Errorf("decode anthropic response: %w", err)
