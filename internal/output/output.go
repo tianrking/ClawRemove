@@ -19,93 +19,92 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 	}
 
 	lines := []string{
-		"Agent Environment Report",
-		"========================",
-		"",
-		"Platform: " + report.Platform,
-		"Architecture: " + report.Host.Arch,
-		"",
-		"AI Runtime",
-		"----------",
-		report.Runtime.Summary,
-	}
-	for _, rt := range report.Runtime.Detected {
-		status := "stopped"
-		if rt.Running {
-			status = "running"
-		}
-		line := fmt.Sprintf("  %s (%s)", rt.Name, status)
-		if rt.Version != "" {
-			line += " v" + rt.Version
-		}
-		if rt.Port > 0 {
-			line += fmt.Sprintf(" port:%d", rt.Port)
-		}
-		lines = append(lines, line)
+		"AI Environment Report",
+		"─────────────────────────",
 	}
 
-	lines = append(lines, "",
-		"Agent Tools",
-		"-----------",
-		report.Agents.Summary)
-	if len(report.Agents.Applications) > 0 {
-		lines = append(lines, "  Applications:")
-		for _, app := range report.Agents.Applications {
-			line := fmt.Sprintf("    %s at %s", app.Name, app.Path)
-			lines = append(lines, line)
-		}
-	}
-	if len(report.Agents.Frameworks) > 0 {
-		lines = append(lines, "  Frameworks:")
-		for _, fw := range report.Agents.Frameworks {
-			line := fmt.Sprintf("    %s (%s)", fw.Name, fw.Manager)
-			if fw.Version != "" {
-				line += " v" + fw.Version
+	// AI Runtime section
+	if len(report.Runtime.Detected) > 0 {
+		lines = append(lines, "",
+			"AI Runtime")
+		for _, rt := range report.Runtime.Detected {
+			status := "stopped"
+			if rt.Running {
+				status = "running"
+			}
+			line := fmt.Sprintf("  - %s (%s)", rt.Name, status)
+			if rt.Port > 0 {
+				line += fmt.Sprintf(" port:%d", rt.Port)
 			}
 			lines = append(lines, line)
 		}
 	}
 
-	lines = append(lines, "",
-		"AI Artifacts",
-		"------------",
-		report.Artifacts.Summary)
+	// AI Tools section
+	if len(report.Agents.Applications) > 0 {
+		lines = append(lines, "",
+			"AI Tools")
+		for _, app := range report.Agents.Applications {
+			lines = append(lines, fmt.Sprintf("  - %s", app.Name))
+		}
+	}
+
+	// Models section
 	if len(report.Artifacts.Models) > 0 {
-		lines = append(lines, "  Models:")
+		lines = append(lines, "",
+			"Models")
 		for _, m := range report.Artifacts.Models {
-			lines = append(lines, fmt.Sprintf("    %s: %s at %s", m.Name, formatSize(m.Size), m.Path))
+			lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
 		}
 	}
+
+	// Caches section
 	if len(report.Artifacts.Caches) > 0 {
-		lines = append(lines, "  Caches:")
+		lines = append(lines, "",
+			"Caches")
 		for _, c := range report.Artifacts.Caches {
-			lines = append(lines, fmt.Sprintf("    %s: %s at %s", c.Name, formatSize(c.Size), c.Path))
+			lines = append(lines, fmt.Sprintf("  - %s: %s", c.Name, formatSize(c.Size)))
 		}
 	}
 
-	lines = append(lines, "",
-		"Security",
-		"--------",
-		report.Security.Summary)
-	for _, f := range report.Security.Findings {
-		severity := strings.ToUpper(f.Severity)
-		if severity == "HIGH" {
-			severity = "⚠️ HIGH"
-		}
-		lines = append(lines, fmt.Sprintf("  [%s] %s: %s", severity, f.Provider, f.Location))
-		if f.Remediation != "" {
-			lines = append(lines, fmt.Sprintf("    → %s", f.Remediation))
+	// Vector DBs section
+	if len(report.Artifacts.VectorDBs) > 0 {
+		lines = append(lines, "",
+			"Vector Databases")
+		for _, v := range report.Artifacts.VectorDBs {
+			status := ""
+			if v.Size > 0 {
+				status = fmt.Sprintf(": %s", formatSize(v.Size))
+			}
+			lines = append(lines, fmt.Sprintf("  - %s%s", v.Name, status))
 		}
 	}
 
+	// Security findings
+	if len(report.Security.Findings) > 0 {
+		lines = append(lines, "",
+			"Security Findings")
+		for _, f := range report.Security.Findings {
+			icon := "⚠️"
+			if f.Severity == "high" {
+				icon = "🔴"
+			}
+			lines = append(lines, fmt.Sprintf("  %s %s found in:", icon, f.Provider))
+			lines = append(lines, fmt.Sprintf("      %s", f.Location))
+		}
+	}
+
+	// Total AI Storage - the killer feature!
 	lines = append(lines, "",
-		"Hygiene",
-		"-------",
-		report.Hygiene.Summary)
+		"─────────────────────────",
+		fmt.Sprintf("Total AI Storage: %s", formatSize(report.Hygiene.TotalSize)))
+
+	// Recommendations
 	if len(report.Hygiene.Recommendations) > 0 {
-		lines = append(lines, "  Recommendations:")
+		lines = append(lines, "",
+			"Recommendations:")
 		for _, rec := range report.Hygiene.Recommendations {
-			lines = append(lines, "    - "+rec)
+			lines = append(lines, fmt.Sprintf("  • %s", rec))
 		}
 	}
 
@@ -132,29 +131,50 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 
 	lines := []string{
 		"AI Inventory",
-		"============",
-		"",
-		"Runtime: " + report.Runtime.Summary,
+		"─────────────────────────",
 	}
-	for _, rt := range report.Runtime.Detected {
-		status := "stopped"
-		if rt.Running {
-			status = "running"
+
+	// Runtime
+	if len(report.Runtime.Detected) > 0 {
+		lines = append(lines, "",
+			"AI Runtime")
+		for _, rt := range report.Runtime.Detected {
+			status := "stopped"
+			if rt.Running {
+				status = "running"
+			}
+			lines = append(lines, fmt.Sprintf("  - %s (%s)", rt.Name, status))
 		}
-		lines = append(lines, fmt.Sprintf("  - %s [%s]", rt.Name, status))
 	}
 
-	lines = append(lines, "", "Agents: "+report.Agents.Summary)
-	for _, app := range report.Agents.Applications {
-		lines = append(lines, fmt.Sprintf("  - %s: %s", app.Name, app.Path))
-	}
-	for _, fw := range report.Agents.Frameworks {
-		lines = append(lines, fmt.Sprintf("  - %s (%s)", fw.Name, fw.Manager))
+	// Agents
+	if len(report.Agents.Applications) > 0 {
+		lines = append(lines, "",
+			"AI Tools")
+		for _, app := range report.Agents.Applications {
+			lines = append(lines, fmt.Sprintf("  - %s", app.Name))
+		}
 	}
 
-	lines = append(lines, "", "Artifacts: "+report.Artifacts.Summary)
-	for _, m := range report.Artifacts.Models {
-		lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
+	// Frameworks
+	if len(report.Agents.Frameworks) > 0 {
+		lines = append(lines, "",
+			"Frameworks")
+		for _, fw := range report.Agents.Frameworks {
+			lines = append(lines, fmt.Sprintf("  - %s (%s)", fw.Name, fw.Manager))
+		}
+	}
+
+	// Artifacts
+	if len(report.Artifacts.Models) > 0 || len(report.Artifacts.Caches) > 0 {
+		lines = append(lines, "",
+			"Artifacts")
+		for _, m := range report.Artifacts.Models {
+			lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
+		}
+		for _, c := range report.Artifacts.Caches {
+			lines = append(lines, fmt.Sprintf("  - %s: %s", c.Name, formatSize(c.Size)))
+		}
 	}
 
 	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
@@ -171,31 +191,31 @@ func PrintSecurity(w io.Writer, report model.EnvironmentReport, jsonMode bool) e
 
 	lines := []string{
 		"AI Security Audit",
-		"=================",
-		"",
-		"Summary: " + report.Security.Summary,
-	}
-	if report.Security.HighRisk > 0 {
-		lines = append(lines, fmt.Sprintf("High Risk Issues: %d", report.Security.HighRisk))
+		"─────────────────────────",
 	}
 
 	if len(report.Security.Findings) > 0 {
-		lines = append(lines, "", "Findings:")
 		for _, f := range report.Security.Findings {
-			severity := strings.ToUpper(f.Severity)
-			if severity == "HIGH" {
-				severity = "⚠️ HIGH"
+			icon := "⚠️"
+			if f.Severity == "high" {
+				icon = "🔴"
 			}
-			lines = append(lines, fmt.Sprintf("  [%s] %s", severity, f.Type))
-			lines = append(lines, fmt.Sprintf("    Provider: %s", f.Provider))
-			lines = append(lines, fmt.Sprintf("    Location: %s", f.Location))
+			lines = append(lines, fmt.Sprintf("  %s %s", icon, f.Type))
+			lines = append(lines, fmt.Sprintf("      Provider: %s", f.Provider))
+			lines = append(lines, fmt.Sprintf("      Location: %s", f.Location))
 			if f.Line > 0 {
-				lines = append(lines, fmt.Sprintf("    Line: %d", f.Line))
+				lines = append(lines, fmt.Sprintf("      Line: %d", f.Line))
 			}
-			lines = append(lines, fmt.Sprintf("    Fix: %s", f.Remediation))
 		}
+		lines = append(lines, "",
+			"─────────────────────────")
+		if report.Security.HighRisk > 0 {
+			lines = append(lines, fmt.Sprintf("High Risk Issues: %d", report.Security.HighRisk))
+		}
+		lines = append(lines, fmt.Sprintf("Total Issues: %d", len(report.Security.Findings)))
 	} else {
-		lines = append(lines, "", "No security issues found.")
+		lines = append(lines, "",
+			"No security issues found.")
 	}
 
 	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
@@ -211,24 +231,30 @@ func PrintHygiene(w io.Writer, report model.EnvironmentReport, jsonMode bool) er
 	}
 
 	lines := []string{
-		"AI Storage Hygiene",
-		"==================",
-		"",
-		"Summary: " + report.Hygiene.Summary,
-		"",
-		"Storage Usage:",
-		fmt.Sprintf("  Models:    %s", formatSize(report.Hygiene.ModelsSize)),
-		fmt.Sprintf("  Cache:     %s", formatSize(report.Hygiene.CacheSize)),
-		fmt.Sprintf("  Vector DB: %s", formatSize(report.Hygiene.VectorDBSize)),
-		fmt.Sprintf("  Logs:      %s", formatSize(report.Hygiene.LogSize)),
-		"  -------------------",
-		fmt.Sprintf("  Total:     %s", formatSize(report.Hygiene.TotalSize)),
+		"AI Storage Usage",
+		"─────────────────────────",
+	}
+	if report.Hygiene.ModelsSize > 0 {
+		lines = append(lines, fmt.Sprintf("  Models:     %s", formatSize(report.Hygiene.ModelsSize)))
+	}
+	if report.Hygiene.CacheSize > 0 {
+		lines = append(lines, fmt.Sprintf("  Cache:      %s", formatSize(report.Hygiene.CacheSize)))
+	}
+	if report.Hygiene.VectorDBSize > 0 {
+		lines = append(lines, fmt.Sprintf("  Vector DB:  %s", formatSize(report.Hygiene.VectorDBSize)))
+	}
+	if report.Hygiene.LogSize > 0 {
+		lines = append(lines, fmt.Sprintf("  Logs:       %s", formatSize(report.Hygiene.LogSize)))
 	}
 
+	lines = append(lines, "─────────────────────────")
+	lines = append(lines, fmt.Sprintf("  Total:      %s", formatSize(report.Hygiene.TotalSize)))
+
 	if len(report.Hygiene.Recommendations) > 0 {
-		lines = append(lines, "", "Recommendations:")
+		lines = append(lines, "",
+			"Recommendations:")
 		for _, rec := range report.Hygiene.Recommendations {
-			lines = append(lines, "  - "+rec)
+			lines = append(lines, fmt.Sprintf("  • %s", rec))
 		}
 	}
 
