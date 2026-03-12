@@ -80,3 +80,45 @@ func (Provider) Facts() model.ProductFacts {
 		},
 	}
 }
+
+func (Provider) Capabilities() model.ProviderCapabilities {
+	return model.ProviderCapabilities{
+		Skills: []model.ProviderSkill{
+			{
+				ID:          "openclaw-residue-analysis",
+				Name:        "OpenClaw Residue Analysis",
+				Description: "Analyze OpenClaw residue using provider-specific state paths, package names, service markers, and legacy aliases.",
+				Inputs:      []string{"discovery", "verification"},
+			},
+			{
+				ID:          "openclaw-safe-removal-review",
+				Name:        "OpenClaw Safe Removal Review",
+				Description: "Review confirmed residue, high-risk actions, and investigate-only findings before apply.",
+				Inputs:      []string{"verification", "plan", "advice"},
+			},
+		},
+		Tools: []model.ProviderTool{
+			{
+				ID:          "openclaw-state-probe",
+				Name:        "OpenClaw State Probe",
+				Description: "Read-only inspection of discovered state, workspace, temp, app, and CLI paths.",
+				ReadOnly:    true,
+				Targets:     []string{"state_dirs", "workspace_dirs", "path_probe"},
+			},
+			{
+				ID:          "openclaw-runtime-probe",
+				Name:        "OpenClaw Runtime Probe",
+				Description: "Read-only inspection of discovered packages, services, listeners, and processes.",
+				ReadOnly:    true,
+				Targets:     []string{"services", "service_probe", "packages", "package_probe", "processes", "process_probe", "verification"},
+			},
+			{
+				ID:          "openclaw-shell-probe",
+				Name:        "OpenClaw Shell Probe",
+				Description: "Read-only inspection of shell profile traces and completion residue tied to OpenClaw markers.",
+				ReadOnly:    true,
+				Targets:     []string{"shell_profile_probe"},
+			},
+		},
+	}
+}

@@ -123,17 +123,18 @@ type Result struct {
 }
 
 type Report struct {
-	OK        bool         `json:"ok"`
-	Product   string       `json:"product"`
-	Command   string       `json:"command"`
-	DryRun    bool         `json:"dryRun"`
-	AuditOnly bool         `json:"auditOnly"`
-	Host      Host         `json:"host"`
-	Discovery Discovery    `json:"discovery"`
-	Verify    Verification `json:"verify"`
-	Plan      Plan         `json:"plan"`
-	Results   []Result     `json:"results"`
-	Advice    *Advice      `json:"advice,omitempty"`
+	OK           bool                 `json:"ok"`
+	Product      string               `json:"product"`
+	Command      string               `json:"command"`
+	DryRun       bool                 `json:"dryRun"`
+	AuditOnly    bool                 `json:"auditOnly"`
+	Host         Host                 `json:"host"`
+	Capabilities ProviderCapabilities `json:"capabilities"`
+	Discovery    Discovery            `json:"discovery"`
+	Verify       Verification         `json:"verify"`
+	Plan         Plan                 `json:"plan"`
+	Results      []Result             `json:"results"`
+	Advice       *Advice              `json:"advice,omitempty"`
 }
 
 type Residual struct {

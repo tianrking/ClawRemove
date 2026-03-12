@@ -29,6 +29,8 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		fmt.Sprintf("Processes: %d", len(report.Discovery.Processes)),
 		fmt.Sprintf("Containers: %d", len(report.Discovery.Containers)),
 		fmt.Sprintf("Images: %d", len(report.Discovery.Images)),
+		fmt.Sprintf("Provider skills: %d", len(report.Capabilities.Skills)),
+		fmt.Sprintf("Provider tools: %d", len(report.Capabilities.Tools)),
 		fmt.Sprintf("Verified residuals: exact=%d strong=%d heuristic=%d", report.Verify.Summary.Exact, report.Verify.Summary.Strong, report.Verify.Summary.Heuristic),
 		fmt.Sprintf("Planned actions: %d", len(report.Plan.Actions)),
 	}
@@ -62,6 +64,15 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		for _, rec := range report.Advice.Recommendations {
 			line := fmt.Sprintf("- Recommendation: %s :: %s :: risk=%s :: evidence=%s", rec.Kind, rec.Target, rec.Risk, rec.Evidence)
 			lines = append(lines, line)
+		}
+	}
+	if len(report.Capabilities.Skills) > 0 || len(report.Capabilities.Tools) > 0 {
+		lines = append(lines, "", "Provider Capabilities:")
+		for _, skill := range report.Capabilities.Skills {
+			lines = append(lines, fmt.Sprintf("- Skill: %s :: %s", skill.ID, skill.Name))
+		}
+		for _, tool := range report.Capabilities.Tools {
+			lines = append(lines, fmt.Sprintf("- Tool: %s :: readOnly=%t", tool.ID, tool.ReadOnly))
 		}
 	}
 	if report.Verify.Verified {

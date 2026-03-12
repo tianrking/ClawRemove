@@ -69,10 +69,11 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 				ExeExt:  e.host.ExeExt,
 				HomeEnv: e.host.HomeEnv,
 			},
-			Discovery: discovered,
-			Verify:    verification,
-			Plan:      executionPlan,
-			Results:   results,
+			Capabilities: provider.Capabilities(),
+			Discovery:    discovered,
+			Verify:       verification,
+			Plan:         executionPlan,
+			Results:      results,
 		})
 		advice = &assessed
 	}
@@ -89,10 +90,11 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 			ExeExt:  e.host.ExeExt,
 			HomeEnv: e.host.HomeEnv,
 		},
-		Discovery: discovered,
-		Verify:    verification,
-		Plan:      executionPlan,
-		Results:   results,
-		Advice:    advice,
+		Capabilities: provider.Capabilities(),
+		Discovery:    discovered,
+		Verify:       verification,
+		Plan:         executionPlan,
+		Results:      results,
+		Advice:       advice,
 	}, nil
 }

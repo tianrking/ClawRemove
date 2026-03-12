@@ -56,6 +56,8 @@ ClawRemove is in active build-out.
 
 The current release target is a production-grade OpenClaw removal CLI built on top of a provider-based engine that can later support additional claw-family products without rewriting the core.
 
+Each product provider is now expected to describe not only facts, but also provider-specific skills and tools for controlled analysis and future expansion.
+
 ## Current Provider
 
 Currently included:
@@ -71,6 +73,7 @@ The engine is already structured for future providers such as other claw-family 
 - High-risk actions are opt-in: killing processes and removing containers or images are never implicit.
 - Minimal footprint: no telemetry, no persistent service, no hidden state database.
 - Provider architecture: each supported claw product is a dedicated rule pack.
+- Provider capabilities: each supported product can expose its own skills and read-only tool set.
 - Controlled intelligence: any future LLM assistance is advisory only unless the deterministic engine can justify the action.
 
 ## Why ClawRemove
@@ -98,6 +101,7 @@ The first implementation of this architecture is now present:
 - multi-provider LLM support for OpenAI, Anthropic, and other OpenAI-compatible APIs
 - a controlled ReAct loop
 - a read-only tool protocol over in-memory discovery and plan data
+- provider-specific skills and tools metadata
 - a hard boundary that prevents the model from issuing destructive commands directly
 
 ## Commands
@@ -251,6 +255,21 @@ Instead, it can request only read-only tools over the existing report:
 
 Those tools either inspect in-memory data already collected by the deterministic engine or perform tightly scoped read-only probes against already discovered targets. They do not mutate files, do not delete data, and do not broaden the scan surface beyond known findings.
 
+## Provider Skills And Tools
+
+ClawRemove now treats product providers as capability bundles instead of plain fact tables.
+
+Each provider can define:
+
+- `facts`
+  Install paths, markers, package refs, shell traces, and other deterministic fingerprints.
+- `skills`
+  High-level product-specific analysis abilities that the advisor and future controllers can reason about.
+- `tools`
+  Read-only probes that are safe for the advisor to call when investigating already discovered targets.
+
+This structure is intended to scale as ClawRemove adds more products, more models, and richer operator guidance without turning the engine into an unbounded autonomous agent.
+
 ## Verification Model
 
 `verify` now classifies leftovers instead of behaving like a second plain audit pass.
@@ -334,6 +353,9 @@ internal/output            human and JSON reporting
 internal/platform          host and platform abstractions
 internal/products          provider registry
 internal/products/openclaw OpenClaw provider
+internal/skills            provider skill catalog
+internal/tools             provider tool catalog
+internal/model             reports, evidence, capabilities, and verification models
 internal/system            system command runner
 docs                       roadmap and development plan
 scripts                    build helpers

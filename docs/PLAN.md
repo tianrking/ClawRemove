@@ -58,6 +58,8 @@ internal/output
 internal/platform
 internal/products/openclaw
 internal/products/<future-provider>
+internal/skills
+internal/tools
 docs
 scripts
 ```
@@ -72,6 +74,8 @@ scripts
 - `output`: text and JSON reporting
 - `platform`: platform-native adapters and system integrations
 - `products/*`: provider facts, aliases, heuristics, and verification logic
+- `skills`: provider-declared high-level analysis capabilities
+- `tools`: controlled read-only tool catalog used by advisors
 
 ## Current State
 
@@ -87,6 +91,7 @@ Implemented today:
 - controlled advisor scaffold and `explain` command
 - multi-provider LLM client for OpenAI, Anthropic, and OpenAI-compatible APIs
 - residual verification classifier with confirmed versus investigate buckets
+- provider capability model with provider-specific skills and tools
 
 Still missing or incomplete:
 
@@ -95,7 +100,7 @@ Still missing or incomplete:
 - formal release packaging and checksums
 - richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
-- a controlled AI advisor layer for explanation and evidence gathering
+- a richer provider skill and tool authoring workflow
 
 ## Delivery Phases
 
@@ -129,6 +134,7 @@ Goal: make the core engine robust enough for multiple providers.
 Work items:
 
 - formalize `ProductProvider` and evidence interfaces
+- formalize provider skills and tool contracts
 - add a `platform` adapter layer
 - split exact, strong, and heuristic evidence into explicit types
 - standardize action metadata: reason, evidence, risk, opt-in requirement
@@ -147,12 +153,13 @@ Goal: add ReAct-style assistance without turning ClawRemove into an unsafe auton
 
 Work items:
 
-- add an `internal/llm` package with provider-agnostic interfaces
+- add an `internal/llm` package with provider-agnostic interfaces and multi-model routing
 - define a strict tool schema for read-only evidence gathering
 - keep destructive execution outside the LLM boundary
 - add an `explain` or `advisor` flow for operator guidance
 - make model output structured and machine-validated
 - document safe prompt and tool rules
+- let advisors consume provider-declared skills and tool inventories
 
 Exit criteria:
 
@@ -197,10 +204,10 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Add version injection and release packaging.
-2. Improve `verify` to classify confirmed leftovers versus report-only findings.
+2. Introduce dedicated `internal/skills` and `internal/tools` packages.
 3. Introduce `internal/platform` adapters.
 4. Expand OpenClaw legacy aliases and service naming coverage.
-5. Add a controlled AI advisor interface and schema.
+5. Add provider-aware multi-model routing and advisor trace output.
 6. Add tests for planning edge cases and provider evidence classification.
 7. Add GitHub release workflow with archives and checksums.
 
@@ -236,3 +243,5 @@ A feature is done only when all of the following are true:
 `docs/PLAN.md` explains where the project is going and how agents should continue development safely.
 
 This file should stay current whenever major architecture or roadmap decisions change.
+
+When code structure, provider capabilities, or advisor behavior changes, both `README.md` and `docs/PLAN.md` must be updated in the same change.

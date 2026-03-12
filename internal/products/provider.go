@@ -11,6 +11,7 @@ type Provider interface {
 	ID() string
 	DisplayName() string
 	Facts() model.ProductFacts
+	Capabilities() model.ProviderCapabilities
 }
 
 func Registry() []Provider {

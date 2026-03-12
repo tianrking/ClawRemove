@@ -35,6 +35,8 @@ ClawRemove está en desarrollo activo.
 
 El objetivo inmediato es ofrecer un CLI de nivel profesional para eliminar OpenClaw, mientras el motor se mantiene listo para crecer hacia más proveedores y una futura interfaz de escritorio.
 
+Ahora cada provider no solo describe hechos y reglas, sino tambien skills y tools de solo lectura para evolucionar el analisis de forma controlada.
+
 ## Principios
 
 - Descubrimiento basado en evidencia
@@ -42,6 +44,7 @@ El objetivo inmediato es ofrecer un CLI de nivel profesional para eliminar OpenC
 - Acciones de alto riesgo siempre con opt-in explícito
 - Sin servicios residentes ni base de datos oculta
 - Arquitectura por proveedores para ampliar productos más adelante
+- Cada provider puede declarar sus propios skills y tools de solo lectura
 - Si en el futuro integra LLM, ese modelo solo podrá asesorar; no podrá ejecutar acciones destructivas por su cuenta
 
 ## Por qué ClawRemove
@@ -68,6 +71,7 @@ Esta capacidad ya empezo a materializarse:
 - soporte para multiples proveedores LLM, incluyendo OpenAI, Anthropic y otros servicios OpenAI-compatible
 - un bucle ReAct controlado
 - protocolo de herramientas de solo lectura y probes controlados
+- metadata de skills y tools especificos por provider
 - una frontera dura que impide al modelo ejecutar acciones destructivas por su cuenta
 
 ## Comandos
