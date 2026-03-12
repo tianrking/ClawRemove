@@ -11,9 +11,9 @@
   <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
 </div>
 
-ClawRemove is a professional cross-platform claw uninstaller engine.
+ClawRemove is a professional cross-platform claw removal engine written in Go.
 
-Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of supported claw products without behaving like a generic cleaner that sprays changes across the system.
+Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of OpenClaw and other claw-family agents without behaving like a generic cleaner that sprays changes across the system.
 
 ClawRemove is designed to be:
 
@@ -23,6 +23,12 @@ ClawRemove is designed to be:
 - portable across macOS, Linux, and Windows
 - extensible through product providers
 - suitable for both CLI-first workflows and future desktop control software
+
+ClawRemove should be understood as a controlled uninstall claw:
+
+- it understands how claw agents install, persist, and leave residue
+- it uses that understanding to remove them cleanly
+- it does not become a noisy resident agent itself
 
 ## Documentation
 
@@ -41,6 +47,8 @@ It focuses on one job:
 2. build a deletion plan
 3. execute only the approved actions
 4. verify what remains
+
+It is a removal-first tool, not a system maintenance suite.
 
 ## Project Status
 
@@ -63,6 +71,7 @@ The engine is already structured for future providers such as other claw-family 
 - High-risk actions are opt-in: killing processes and removing containers or images are never implicit.
 - Minimal footprint: no telemetry, no persistent service, no hidden state database.
 - Provider architecture: each supported claw product is a dedicated rule pack.
+- Controlled intelligence: any future LLM assistance is advisory only unless the deterministic engine can justify the action.
 
 ## Why ClawRemove
 
@@ -71,6 +80,18 @@ The engine is already structured for future providers such as other claw-family 
 - Evidence matters more than heuristics.
 - JSON output is suitable for automation and future desktop tooling.
 - The repository is structured for continued agent-driven iteration.
+- The long-term design allows an AI-assisted analyst without letting the model directly mutate the system.
+
+## Controlled AI Direction
+
+ClawRemove may later integrate an LLM-assisted analysis layer, but only under strict constraints:
+
+- the LLM can explain findings and ask for more evidence
+- the LLM can help classify uncertainty and improve operator guidance
+- the LLM cannot directly issue destructive shell commands
+- the deterministic engine remains the final authority for execution
+
+This keeps ClawRemove useful like an agent while remaining auditable like a proper system tool.
 
 ## Commands
 

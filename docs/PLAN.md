@@ -13,6 +13,12 @@ The product goal is narrow by design:
 
 ClawRemove is not a generic "PC cleaner", not a system tuner, and not a resident management agent.
 
+It should behave like a controlled uninstall claw:
+
+- smart enough to reason about claw-agent footprints
+- strict enough to avoid unbounded system changes
+- quiet enough to leave no new mess behind
+
 ## Product Direction
 
 ClawRemove should feel predictable, surgical, and quiet:
@@ -22,6 +28,7 @@ ClawRemove should feel predictable, surgical, and quiet:
 - no telemetry by default
 - no broad wildcard deletion
 - no destructive action without explicit reasoning
+- no LLM authority over destructive execution
 
 The long-term direction is a reusable removal engine with pluggable product providers.
 
@@ -36,6 +43,7 @@ The first provider is `openclaw`. Future providers can include other claw-family
 - Provider isolation. Product-specific rules must stay inside provider packages.
 - Platform isolation. macOS, Linux, and Windows behavior must not leak into generic engine code.
 - Human-readable and machine-readable output must remain stable.
+- Any future LLM integration must stay advisory unless deterministic evidence promotes an action into the executable plan.
 
 ## Architectural Target
 
@@ -84,6 +92,7 @@ Still missing or incomplete:
 - formal release packaging and checksums
 - richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
+- a controlled AI advisor layer for explanation and evidence gathering
 
 ## Delivery Phases
 
@@ -129,7 +138,25 @@ Exit criteria:
 - new providers can be added without editing core planning semantics
 - output schema changes are intentional and reviewed
 
-### Phase 3: Multi-Provider Expansion
+### Phase 3: Controlled AI Advisor
+
+Goal: add ReAct-style assistance without turning ClawRemove into an unsafe autonomous agent.
+
+Work items:
+
+- add an `internal/llm` package with provider-agnostic interfaces
+- define a strict tool schema for read-only evidence gathering
+- keep destructive execution outside the LLM boundary
+- add an `explain` or `advisor` flow for operator guidance
+- make model output structured and machine-validated
+- document safe prompt and tool rules
+
+Exit criteria:
+
+- the LLM can explain findings without being able to directly mutate the system
+- advisory output is deterministic enough to be reviewed and logged
+- execution remains owned by the core engine
+### Phase 4: Multi-Provider Expansion
 
 Goal: support additional claw-family products without compromising safety.
 
@@ -146,7 +173,7 @@ Exit criteria:
 - provider discovery does not regress existing products
 - heuristics remain report-only unless promoted by strong evidence
 
-### Phase 4: Desktop Controller Readiness
+### Phase 5: Desktop Controller Readiness
 
 Goal: prepare the engine for a future GUI or upper-computer controller.
 
@@ -170,8 +197,9 @@ Priority order for the next development iterations:
 2. Improve `verify` to classify confirmed leftovers versus report-only findings.
 3. Introduce `internal/platform` adapters.
 4. Expand OpenClaw legacy aliases and service naming coverage.
-5. Add tests for planning edge cases and provider evidence classification.
-6. Add GitHub release workflow with archives and checksums.
+5. Add a controlled AI advisor interface and schema.
+6. Add tests for planning edge cases and provider evidence classification.
+7. Add GitHub release workflow with archives and checksums.
 
 ## Rules For Agents
 
@@ -183,6 +211,7 @@ Agents working on ClawRemove should preserve these constraints:
 - do not broaden deletion to fuzzy filesystem scans
 - do not let product-specific rules leak into generic engine packages
 - do not mark heuristic findings as auto-removable without review
+- do not let an LLM directly own destructive execution
 
 When in doubt, prefer reporting over deletion.
 

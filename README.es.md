@@ -11,9 +11,9 @@
   <p><a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a> | Español</p>
 </div>
 
-ClawRemove es un motor profesional y multiplataforma para desinstalar productos claw.
+ClawRemove es un motor profesional y multiplataforma, escrito en Go, para eliminar productos claw.
 
-Su objetivo es muy claro: descubrir residuos reales, construir un plan de eliminación, ejecutar la limpieza y verificar el resultado. No intenta comportarse como un limpiador genérico que modifica el sistema sin control.
+Su objetivo es muy claro: descubrir residuos reales de OpenClaw y otros agentes de la familia claw, construir un plan de eliminación, ejecutar la limpieza y verificar el resultado. No intenta comportarse como un limpiador genérico que modifica el sistema sin control.
 
 ## Documentación
 
@@ -42,6 +42,7 @@ El objetivo inmediato es ofrecer un CLI de nivel profesional para eliminar OpenC
 - Acciones de alto riesgo siempre con opt-in explícito
 - Sin servicios residentes ni base de datos oculta
 - Arquitectura por proveedores para ampliar productos más adelante
+- Si en el futuro integra LLM, ese modelo solo podrá asesorar; no podrá ejecutar acciones destructivas por su cuenta
 
 ## Por qué ClawRemove
 
@@ -50,6 +51,17 @@ El objetivo inmediato es ofrecer un CLI de nivel profesional para eliminar OpenC
 - La evidencia pesa más que la heurística
 - La salida JSON es útil para automatización y futuras interfaces
 - La estructura del repositorio facilita iteración continua con agentes
+
+## Direccion de IA controlada
+
+ClawRemove puede integrar una capa de analisis asistida por LLM, pero con limites muy claros:
+
+- el LLM puede explicar hallazgos y pedir mas evidencia
+- el LLM puede ayudar a clasificar incertidumbre y orientar al operador
+- el LLM no puede emitir ni ejecutar comandos destructivos directamente
+- el motor determinista sigue siendo la autoridad final para aplicar cambios
+
+Asi ClawRemove puede ser tan util como un agente sin convertirse en otro agente invasivo.
 
 ## Comandos
 
