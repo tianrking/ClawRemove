@@ -246,10 +246,20 @@ cmd/claw-remove            CLI 入口
 internal/app               CLI 命令编排
 internal/core              核心引擎
 internal/discovery         发现层
+internal/evidence          构建发现结果与计划间的证据桥梁
 internal/plan              计划层
-internal/executor          执行层
+internal/executor          执行动作
+internal/llm               advisor 控制器与编排
+internal/llm/prompts       prompt 模板定义
+internal/llm/providers     多模型客户端适配
 internal/output            文本和 JSON 输出
+internal/platform          跨平台底层适配支持
 internal/products          provider 注册
+internal/products/openclaw OpenClaw provider
+internal/skills            provider 技能定义
+internal/tools             provider 工具定义
+internal/model             统一请求、发现及验证模型
+internal/system            系统命令执行封装
 internal/products/openclaw OpenClaw provider
 internal/system            系统命令执行封装
 docs                       路线图和开发计划

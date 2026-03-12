@@ -246,11 +246,20 @@ cmd/claw-remove            entrada CLI
 internal/app               orquestación CLI
 internal/core              motor principal
 internal/discovery         capa de descubrimiento
+internal/evidence          capa de recolección de evidencia
 internal/plan              planificación segura
 internal/executor          ejecución de acciones
+internal/llm               coordinación del advisor
+internal/llm/prompts       plantillas de prompts
+internal/llm/providers     clientes para múltiples modelos
 internal/output            salida humana y JSON
+internal/platform          adaptadores multiplataforma
 internal/products          registro de proveedores
 internal/products/openclaw proveedor OpenClaw
+internal/skills            habilidades específicas de la plataforma
+internal/tools             herramientas específicas de la plataforma
+internal/model             modelos unificados
+internal/system            ejecución de comandos del sistema
 internal/system            ejecución de comandos del sistema
 docs                       hoja de ruta y plan de desarrollo
 scripts                    scripts de build
