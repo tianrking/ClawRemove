@@ -56,24 +56,38 @@ Ahora cada provider no solo describe hechos y reglas, sino tambien skills y tool
 - La salida JSON es útil para automatización y futuras interfaces
 - La estructura del repositorio facilita iteración continua con agentes
 
-## Direccion de IA controlada
+## Análisis con IA
 
-ClawRemove puede integrar una capa de analisis asistida por LLM, pero con limites muy claros:
+ClawRemove incluye una capa de análisis potenciada por IA para inspección mejorada del entorno.
 
-- el LLM puede explicar hallazgos y pedir mas evidencia
-- el LLM puede ayudar a clasificar incertidumbre y orientar al operador
-- el LLM no puede emitir ni ejecutar comandos destructivos directamente
-- el motor determinista sigue siendo la autoridad final para aplicar cambios
+### Principio clave: Solo Asesoramiento
 
-Asi ClawRemove puede ser tan util como un agente sin convertirse en otro agente invasivo.
+La capa LLM es **solo asesoramiento** - puede explicar hallazgos y sugerir acciones, pero:
+- ✅ Puede explicar lo que se descubrió
+- ✅ Puede sugerir qué revisar
+- ✅ Puede ayudar a clasificar items inciertos
+- ❌ No puede ejecutar comandos destructivos directamente
+- ❌ No puede bypassar el motor determinista
 
-Esta capacidad ya empezo a materializarse:
+Esto hace que ClawRemove sea inteligente como un agente, pero seguro como una herramienta del sistema.
 
-- soporte para multiples proveedores LLM, incluyendo OpenAI, Anthropic y otros servicios OpenAI-compatible
-- un bucle ReAct controlado
-- protocolo de herramientas de solo lectura y probes controlados
-- metadata de skills y tools especificos por provider
-- una frontera dura que impide al modelo ejecutar acciones destructivas por su cuenta
+### Capacidades Implementadas
+
+- Soporte para múltiples proveedores LLM (OpenAI, Anthropic, OpenRouter, Zhipu)
+- Bucle ReAct controlado
+- Protocolo de herramientas de solo lectura
+- Metadata de skills y tools por provider
+- El modelo no puede obtener permisos de ejecución destructiva
+
+### Uso
+
+```bash
+# Auditoría mejorada con análisis IA
+clawremove audit --ai
+
+# Explicar hallazgos con asistencia IA
+clawremove explain --ai
+```
 
 ## Comandos
 

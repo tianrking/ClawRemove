@@ -59,24 +59,38 @@ ClawRemove 目前处于持续建设阶段。
 - 输出既适合人看，也适合自动化系统消费
 - 项目结构适合持续用 agent 演进
 
-## 受控 AI 方向
+## AI 分析增强
 
-ClawRemove 后续可以接入 LLM 做分析增强，但边界必须非常严格：
+ClawRemove 内置 AI 分析层，用于增强环境检测报告。
 
-- LLM 可以解释发现结果，提示还缺哪些证据
-- LLM 可以帮助判断不确定项是否值得人工复核
-- LLM 不能直接生成并执行破坏性 shell 命令
-- 真正的执行权必须留在确定性的卸载引擎手里
+### 核心原则：仅提供建议
 
-这样它可以像 agent 一样聪明，但不会像失控 agent 一样乱动系统。
+LLM 层**仅用于分析和建议**，不直接执行操作：
+- ✅ 可以解释发现了什么
+- ✅ 可以建议需要关注的内容
+- ✅ 可以帮助分类不确定项
+- ❌ 不能直接执行破坏性命令
+- ❌ 不能绕过确定性引擎
 
-当前这套能力已经开始落地：
+这样 ClawRemove 可以像 agent 一样智能，但像系统工具一样安全。
 
-- 支持多种 LLM provider，包括 OpenAI、Anthropic 和其他 OpenAI-compatible 服务
+### 已实现的能力
+
+- 支持多种 LLM provider（OpenAI、Anthropic、OpenRouter、Zhipu 等）
 - 具备受控 ReAct 循环
-- 具备只读工具协议与受控二次探测
+- 具备只读工具协议与受控探测
 - 具备 provider-specific skills 与 tools 元数据
 - 模型无法直接取得破坏性执行权
+
+### 使用方法
+
+```bash
+# 增强审计报告
+clawremove audit --ai
+
+# AI 辅助解释发现结果
+clawremove explain --ai
+```
 
 ## 命令
 

@@ -166,13 +166,22 @@ Shared flags:
 - `--remove-docker`
   Opt in to removing matching Docker or Podman containers and images.
 
-## LLM Configuration
+## AI Analysis Enhancement
 
-ClawRemove can attach a controlled advisor to `audit`, `verify`, and `explain`.
+ClawRemove includes an AI-powered analysis layer for enhanced environment inspection.
 
-The advisor is optional. If no LLM configuration is present, ClawRemove falls back to deterministic advisory output.
+### Key Principle: Advisory Only
 
-Supported providers:
+The LLM layer is **advisory only** - it can explain findings and suggest actions, but:
+- ✅ Can explain what was discovered
+- ✅ Can suggest what to review
+- ✅ Can help classify uncertain items
+- ❌ Cannot directly execute destructive commands
+- ❌ Cannot bypass the deterministic engine
+
+This makes ClawRemove smart like an agent, but safe like a proper system tool.
+
+### Supported LLM Providers
 
 - `openai`
 - `anthropic`
@@ -180,22 +189,24 @@ Supported providers:
 - `zhipu`
 - `openai-compatible`
 
+### Configuration
+
 Environment variables:
 
-- `CLAWREMOVE_LLM_PROVIDERS`
-  Comma-separated provider chain. Example: `openai,openrouter,zhipu`.
-- `CLAWREMOVE_LLM_PROVIDER`
-  Single-provider shorthand (legacy fallback).
-- `CLAWREMOVE_LLM_API_KEY`
-  Generic API key override for the configured provider.
-- `OPENAI_API_KEY`
-  Fallback key when `CLAWREMOVE_LLM_PROVIDER=openai`.
-- `ANTHROPIC_API_KEY`
-  Fallback key when `CLAWREMOVE_LLM_PROVIDER=anthropic`.
-- `OPENROUTER_API_KEY`
-  Fallback key when provider is `openrouter`.
-- `ZHIPU_API_KEY`
-  Fallback key when provider is `zhipu`.
+- `CLAWREMOVE_LLM_PROVIDERS` - Comma-separated provider chain
+- `CLAWREMOVE_LLM_API_KEY` - Generic API key override
+- `OPENAI_API_KEY` - OpenAI API key
+- `ANTHROPIC_API_KEY` - Anthropic API key
+
+### Usage
+
+```bash
+# Enhanced audit with AI analysis
+clawremove audit --ai
+
+# Explain findings with AI assistance
+clawremove explain --ai
+```
 
 ## Safe Removal Workflow
 
