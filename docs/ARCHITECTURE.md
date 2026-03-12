@@ -81,6 +81,8 @@ cmd/claw-remove
 
 This is already understandable and mostly clean.
 
+`cmd/claw-remove/main.go` being a single-file entrypoint is intentional. Keeping it under `cmd/claw-remove/` follows idiomatic Go command layout and avoids future churn when adding additional binaries.
+
 The main risk is that `core`, `llm`, and `plan` become accumulation points if new behavior is added without another structural pass.
 
 ## Target Architecture
@@ -227,6 +229,8 @@ The LLM system should eventually split into:
 The current implementation is good enough for now, but it is still concentrated in a single `reactor.go`.
 
 The split has started with dedicated `prompts` and `providers` packages, but tool mediation and reactor control still need a cleaner boundary.
+
+The provider layer now supports multi-driver chains for OpenAI, Anthropic, OpenRouter, Zhipu, and OpenAI-compatible endpoints.
 
 ### `platform`
 

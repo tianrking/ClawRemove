@@ -1,5 +1,13 @@
 # ClawRemove Development Plan
 
+## Latest Progress
+
+- Added `internal/evidence` and moved verification/classification flow to consume evidence.
+- Updated planning to consume evidence and attach evidence strength to actions.
+- Split LLM stack into clearer layers with `internal/llm/prompts` and `internal/llm/providers`.
+- Added initial platform adapters (`darwin`, `linux`, `windows`) and routed controlled probe status commands through adapters.
+- Added multi-driver LLM support direction and implementation baseline for `openai`, `anthropic`, `openrouter`, `zhipu`, and `openai-compatible`.
+
 ## Mission
 
 ClawRemove exists to be the cleanest and most trustworthy claw-family removal engine on macOS, Linux, and Windows.
@@ -95,6 +103,7 @@ Implemented today:
 - explicit `internal/evidence` layer and partial LLM split into prompts/providers/reactor
 - initial `internal/platform` adapters (darwin/linux/windows) wired into controlled probe commands
 - explicit architecture assessment in `docs/ARCHITECTURE.md`
+- multi-driver LLM configuration and fallback-chain capability
 
 Still missing or incomplete:
 
@@ -209,10 +218,10 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Add version injection and release packaging.
-2. Finish the transition so `plan` and `verify` consume evidence everywhere.
-3. Complete the `internal/llm` split into prompts, providers, and reactor subpackages.
-4. Introduce stronger `internal/platform/*` adapters.
-5. Turn `internal/skills` and `internal/tools` into real runtime contracts.
+2. Complete evidence provenance (rule id, source, confidence) and use it in planning policy.
+3. Finish the LLM split by moving tool mediation out of `reactor.go`.
+4. Expand platform adapter usage into discovery and planning paths.
+5. Turn `internal/skills` and `internal/tools` into runtime contracts.
 6. Expand OpenClaw legacy aliases and service naming coverage.
 7. Add provider-aware multi-model routing trace output and GitHub release automation.
 

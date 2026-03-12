@@ -175,22 +175,34 @@ Supported providers:
 
 - `openai`
 - `anthropic`
+- `openrouter`
+- `zhipu`
 - `openai-compatible`
 
 Environment variables:
 
+- `CLAWREMOVE_LLM_PROVIDERS`
+  Comma-separated provider chain. Example: `openai,openrouter,zhipu`.
 - `CLAWREMOVE_LLM_PROVIDER`
-  One of `openai`, `anthropic`, or `openai-compatible`.
+  Single-provider shorthand (legacy fallback).
 - `CLAWREMOVE_LLM_API_KEY`
   Generic API key override for the configured provider.
 - `OPENAI_API_KEY`
   Fallback key when `CLAWREMOVE_LLM_PROVIDER=openai`.
 - `ANTHROPIC_API_KEY`
   Fallback key when `CLAWREMOVE_LLM_PROVIDER=anthropic`.
+- `OPENROUTER_API_KEY`
+  Fallback key when provider is `openrouter`.
+- `ZHIPU_API_KEY`
+  Fallback key when provider is `zhipu`.
+- `BIGMODEL_API_KEY`
+  Secondary fallback key for `zhipu`.
 - `CLAWREMOVE_LLM_BASE_URL`
   Provider base URL override.
 - `CLAWREMOVE_LLM_MODEL`
   Model name override.
+- `CLAWREMOVE_LLM_MODELS`
+  Comma-separated model fallback chain shared by configured providers.
 - `CLAWREMOVE_LLM_MAX_TOKENS`
   Output token budget for advisory responses.
 - `CLAWREMOVE_LLM_MAX_STEPS`
@@ -209,6 +221,13 @@ Defaults:
 - `openai-compatible`
   Base URL: `https://api.openai.com/v1`
   Model: `gpt-4.1-mini`
+
+Provider-specific overrides are also supported:
+
+- `CLAWREMOVE_LLM_OPENAI_BASE_URL`, `CLAWREMOVE_LLM_OPENAI_MODELS`, `CLAWREMOVE_LLM_OPENAI_API_KEY`
+- `CLAWREMOVE_LLM_ANTHROPIC_BASE_URL`, `CLAWREMOVE_LLM_ANTHROPIC_MODELS`, `CLAWREMOVE_LLM_ANTHROPIC_API_KEY`
+- `CLAWREMOVE_LLM_OPENROUTER_BASE_URL`, `CLAWREMOVE_LLM_OPENROUTER_MODELS`, `CLAWREMOVE_LLM_OPENROUTER_API_KEY`
+- `CLAWREMOVE_LLM_ZHIPU_BASE_URL`, `CLAWREMOVE_LLM_ZHIPU_MODELS`, `CLAWREMOVE_LLM_ZHIPU_API_KEY`
 
 Example with OpenAI:
 
@@ -235,6 +254,18 @@ export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
 export CLAWREMOVE_LLM_BASE_URL="https://your-provider.example/v1"
 export CLAWREMOVE_LLM_API_KEY="..."
 export CLAWREMOVE_LLM_MODEL="your-model-name"
+claw-remove explain --product openclaw --ai --json
+```
+
+Example with a multi-provider fallback chain:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDERS="openai,openrouter,zhipu,anthropic"
+export OPENAI_API_KEY="..."
+export OPENROUTER_API_KEY="..."
+export ZHIPU_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export CLAWREMOVE_LLM_MODELS="gpt-4.1-mini,glm-4.5-air,claude-3-5-sonnet-latest"
 claw-remove explain --product openclaw --ai --json
 ```
 
@@ -289,6 +320,8 @@ Current state:
 - still needs broader platform adapter coverage beyond probe command routing
 
 ClawRemove is intentionally being shaped toward a stricter architecture now, before more providers and models make the code harder to untangle.
+
+`cmd/claw-remove/main.go` intentionally lives under `cmd/claw-remove/` even though it is a single file. This is idiomatic Go command layout and keeps space for additional binaries later without restructuring imports or release scripts.
 
 ## Verification Model
 

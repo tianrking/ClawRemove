@@ -7,14 +7,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
+type DriverConfig struct {
+	Provider string
+	BaseURL  string
+	APIKey   string
+	Models   []string
+}
+
 type Config struct {
-	Provider       string
-	BaseURL        string
-	APIKey         string
-	Model          string
+	Drivers        []DriverConfig
 	MaxTokens      int
 	TimeoutSeconds int
 	UserAgent      string
@@ -29,14 +34,37 @@ type Client interface {
 	CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error)
 }
 
+type candidate struct {
+	ID     string
+	Client modelClient
+}
+
+type modelClient interface {
+	CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error)
+}
+
+type chainClient struct {
+	candidates []candidate
+}
+
+type singleConfig struct {
+	Provider  string
+	BaseURL   string
+	APIKey    string
+	Model     string
+	MaxTokens int
+	Timeout   time.Duration
+	UserAgent string
+}
+
 type openAICompatibleClient struct {
 	httpClient *http.Client
-	config     Config
+	config     singleConfig
 }
 
 type anthropicClient struct {
 	httpClient *http.Client
-	config     Config
+	config     singleConfig
 }
 
 type chatCompletionRequest struct {
@@ -69,18 +97,68 @@ type anthropicMessageResponse struct {
 }
 
 func NewFromConfig(cfg Config) Client {
+	timeout := secondsToDuration(cfg.TimeoutSeconds)
+	if cfg.MaxTokens <= 0 {
+		cfg.MaxTokens = 1200
+	}
+	if cfg.UserAgent == "" {
+		cfg.UserAgent = "ClawRemove/0"
+	}
+	var out []candidate
+	for _, driver := range cfg.Drivers {
+		for _, model := range driver.Models {
+			sc := singleConfig{
+				Provider:  strings.ToLower(driver.Provider),
+				BaseURL:   strings.TrimRight(driver.BaseURL, "/"),
+				APIKey:    driver.APIKey,
+				Model:     model,
+				MaxTokens: cfg.MaxTokens,
+				Timeout:   timeout,
+				UserAgent: cfg.UserAgent,
+			}
+			client := newSingleClient(sc)
+			if client == nil {
+				continue
+			}
+			out = append(out, candidate{
+				ID:     sc.Provider + ":" + sc.Model,
+				Client: client,
+			})
+		}
+	}
+	return chainClient{candidates: out}
+}
+
+func newSingleClient(cfg singleConfig) modelClient {
 	switch cfg.Provider {
 	case "anthropic":
 		return anthropicClient{
-			httpClient: &http.Client{Timeout: secondsToDuration(cfg.TimeoutSeconds)},
+			httpClient: &http.Client{Timeout: cfg.Timeout},
+			config:     cfg,
+		}
+	case "openai", "openai-compatible", "openrouter", "zhipu":
+		return openAICompatibleClient{
+			httpClient: &http.Client{Timeout: cfg.Timeout},
 			config:     cfg,
 		}
 	default:
-		return openAICompatibleClient{
-			httpClient: &http.Client{Timeout: secondsToDuration(cfg.TimeoutSeconds)},
-			config:     cfg,
-		}
+		return nil
 	}
+}
+
+func (c chainClient) CompleteJSON(ctx context.Context, systemPrompt string, messages []Message) (string, error) {
+	if len(c.candidates) == 0 {
+		return "", fmt.Errorf("no llm candidates configured")
+	}
+	var errs []string
+	for _, candidate := range c.candidates {
+		content, err := candidate.Client.CompleteJSON(ctx, systemPrompt, messages)
+		if err == nil {
+			return content, nil
+		}
+		errs = append(errs, candidate.ID+": "+err.Error())
+	}
+	return "", fmt.Errorf("all llm candidates failed: %s", strings.Join(errs, " | "))
 }
 
 func secondsToDuration(seconds int) time.Duration {

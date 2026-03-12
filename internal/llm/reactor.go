@@ -41,10 +41,7 @@ func NewAdvisorFromEnv(runner system.Runner, host platform.Host) Advisor {
 	}
 	return controlledAdvisor{
 		client: llmproviders.NewFromConfig(llmproviders.Config{
-			Provider:       cfg.Provider,
-			BaseURL:        cfg.BaseURL,
-			APIKey:         cfg.APIKey,
-			Model:          cfg.Model,
+			Drivers:        toProviderDrivers(cfg.Drivers),
 			MaxTokens:      cfg.MaxTokens,
 			TimeoutSeconds: int(cfg.Timeout.Seconds()),
 			UserAgent:      cfg.UserAgent,
@@ -53,6 +50,19 @@ func NewAdvisorFromEnv(runner system.Runner, host platform.Host) Advisor {
 		runner:  runner,
 		adapter: platform.NewAdapter(host),
 	}
+}
+
+func toProviderDrivers(drivers []Driver) []llmproviders.DriverConfig {
+	out := make([]llmproviders.DriverConfig, 0, len(drivers))
+	for _, driver := range drivers {
+		out = append(out, llmproviders.DriverConfig{
+			Provider: driver.Provider,
+			BaseURL:  driver.BaseURL,
+			APIKey:   driver.APIKey,
+			Models:   driver.Models,
+		})
+	}
+	return out
 }
 
 func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) model.Advice {
