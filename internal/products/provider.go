@@ -5,8 +5,11 @@ import (
 
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/products/nanobot"
+	"github.com/tianrking/ClawRemove/internal/products/nanoclaw"
 	"github.com/tianrking/ClawRemove/internal/products/openclaw"
+	"github.com/tianrking/ClawRemove/internal/products/openfang"
 	"github.com/tianrking/ClawRemove/internal/products/picoclaw"
+	"github.com/tianrking/ClawRemove/internal/products/zeroclaw"
 	"github.com/tianrking/ClawRemove/internal/skills"
 	"github.com/tianrking/ClawRemove/internal/tools"
 	"github.com/tianrking/ClawRemove/internal/verify"
@@ -27,6 +30,9 @@ func Registry() []Provider {
 		openclaw.Provider{},
 		nanobot.Provider{},
 		picoclaw.Provider{},
+		openfang.Provider{},
+		zeroclaw.Provider{},
+		nanoclaw.Provider{},
 	}
 }
 

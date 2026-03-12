@@ -40,6 +40,35 @@ ClawRemove currently supports removal of:
 | OpenClaw | ~/.openclaw | openclaw.json | OPENCLAW_ | 18789 | npm, brew |
 | NanoBot | ~/.nanobot | config.json | NANOBOT_ | 18790 | pip, pipx |
 | PicoClaw | ~/.picoclaw | config.json | PICOCLAW_ | 18790 | binary |
+| OpenFang | ~/.openfang | openfang.json | OPENFANG_ | 18791 | npm |
+| ZeroClaw | ~/.zeroclaw | zeroclaw.json | ZEROCLAW_ | 18792 | npm |
+| NanoClaw | ~/.nanoclaw | nanoclaw.json | NANOCLAW_ | 18793 | npm, pip |
+
+## Future Expansion
+
+ClawRemove is designed to be extensible. Future providers may include:
+
+### AI Agent Frameworks
+- LangGraph agents
+- CrewAI
+- AutoGen
+- GPT Researcher
+- AgentGPT
+
+### Local LLM Tools
+- Ollama
+- LM Studio
+- GPT4All
+- LocalAI
+
+### Development Tools
+- Cursor
+- Windsurf
+- Continue.dev
+- Aider
+- Cline
+
+The architecture allows adding new providers without modifying core engine code.
 
 ## Product Direction
 

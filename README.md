@@ -45,6 +45,9 @@ ClawRemove should be understood as a controlled uninstall tool:
 | OpenClaw | AI assistant platform | ~/.openclaw |
 | NanoBot | Python-based AI agent | ~/.nanobot |
 | PicoClaw | Go-based AI agent | ~/.picoclaw |
+| OpenFang | AI agent framework | ~/.openfang |
+| ZeroClaw | Lightweight AI agent | ~/.zeroclaw |
+| NanoClaw | Mini AI agent | ~/.nanoclaw |
 
 ## Scope
 
