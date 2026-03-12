@@ -72,6 +72,7 @@ claw-remove plan --product openclaw --json
 claw-remove apply --product openclaw --dry-run
 claw-remove apply --product openclaw
 claw-remove verify --product openclaw --json
+claw-remove explain --product openclaw --json
 ```
 
 ### Resumen de comandos
@@ -86,6 +87,8 @@ claw-remove verify --product openclaw --json
   Ejecuta el plan
 - `verify`
   Ejecuta una verificación posterior a la eliminación
+- `explain`
+  Produce analisis asesorado y controlado sobre el descubrimiento determinista
 
 ## Flags
 
@@ -93,6 +96,8 @@ claw-remove verify --product openclaw --json
   Id del proveedor. El valor por defecto actual es `openclaw`
 - `--json`
   Salida estructurada en JSON
+- `--ai`
+  Incluye analisis asesorado y controlado en el reporte
 - `--dry-run`
   Muestra los cambios previstos sin aplicarlos
 - `--keep-cli`
@@ -206,6 +211,12 @@ Verificar al final:
 
 ```bash
 claw-remove verify --product openclaw --json
+```
+
+Pedir una explicacion controlada:
+
+```bash
+claw-remove explain --product openclaw --json
 ```
 
 ## Hoja de ruta

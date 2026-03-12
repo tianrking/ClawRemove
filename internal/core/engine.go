@@ -5,18 +5,22 @@ import (
 
 	"github.com/tianrking/ClawRemove/internal/discovery"
 	"github.com/tianrking/ClawRemove/internal/executor"
+	"github.com/tianrking/ClawRemove/internal/llm"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/plan"
+	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/products"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type Engine struct {
-	runner system.Runner
+	runner  system.Runner
+	advisor llm.Advisor
+	host    platform.Host
 }
 
-func NewEngine(runner system.Runner) Engine {
-	return Engine{runner: runner}
+func NewEngine(runner system.Runner, advisor llm.Advisor, host platform.Host) Engine {
+	return Engine{runner: runner, advisor: advisor, host: host}
 }
 
 func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, error) {
@@ -49,14 +53,42 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 		ok = true
 	}
 
+	var advice *model.Advice
+	if options.AI || options.Command == "explain" {
+		assessed := e.advisor.Assess(ctx, model.Report{
+			OK:        ok,
+			Product:   provider.ID(),
+			Command:   options.Command,
+			DryRun:    options.DryRun,
+			AuditOnly: options.AuditOnly,
+			Host: model.Host{
+				OS:      e.host.OS,
+				Arch:    e.host.Arch,
+				ExeExt:  e.host.ExeExt,
+				HomeEnv: e.host.HomeEnv,
+			},
+			Discovery: discovered,
+			Plan:      executionPlan,
+			Results:   results,
+		})
+		advice = &assessed
+	}
+
 	return model.Report{
 		OK:        ok,
 		Product:   provider.ID(),
 		Command:   options.Command,
 		DryRun:    options.DryRun,
 		AuditOnly: options.AuditOnly,
+		Host: model.Host{
+			OS:      e.host.OS,
+			Arch:    e.host.Arch,
+			ExeExt:  e.host.ExeExt,
+			HomeEnv: e.host.HomeEnv,
+		},
 		Discovery: discovered,
 		Plan:      executionPlan,
 		Results:   results,
+		Advice:    advice,
 	}, nil
 }

@@ -102,6 +102,7 @@ claw-remove plan --product openclaw --json
 claw-remove apply --product openclaw --dry-run
 claw-remove apply --product openclaw
 claw-remove verify --product openclaw --json
+claw-remove explain --product openclaw --json
 ```
 
 ### Command Summary
@@ -116,6 +117,8 @@ claw-remove verify --product openclaw --json
   Executes the planned actions.
 - `verify`
   Runs a post-removal verification pass.
+- `explain`
+  Produces controlled advisory analysis on top of deterministic discovery.
 
 ## Flags
 
@@ -125,6 +128,8 @@ Shared flags:
   Product provider id. Current default: `openclaw`.
 - `--json`
   Emit structured machine-readable output.
+- `--ai`
+  Include controlled advisory analysis in the report.
 - `--dry-run`
   Report intended changes without applying them.
 - `--keep-cli`
@@ -255,6 +260,12 @@ Verify residual state:
 
 ```bash
 claw-remove verify --product openclaw --json
+```
+
+Ask for a controlled explanation:
+
+```bash
+claw-remove explain --product openclaw --json
 ```
 
 ## Roadmap

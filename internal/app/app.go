@@ -8,8 +8,10 @@ import (
 	"io"
 
 	"github.com/tianrking/ClawRemove/internal/core"
+	"github.com/tianrking/ClawRemove/internal/llm"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/output"
+	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/products"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
@@ -23,7 +25,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 0, printProducts(stdout, options.JSON)
 	}
 
-	engine := core.NewEngine(system.NewRunner())
+	engine := core.NewEngine(system.NewRunner(), llm.NewNoopAdvisor(), platform.Detect())
 	report, err := engine.Run(ctx, options)
 	if err != nil {
 		return 1, err
@@ -46,7 +48,7 @@ func parseOptions(args []string) (model.Options, error) {
 		case "products":
 			opts.Command = "products"
 			return opts, nil
-		case "audit", "plan", "apply", "verify":
+		case "audit", "plan", "apply", "verify", "explain":
 			opts.Command = args[0]
 			args = args[1:]
 		}
@@ -57,6 +59,7 @@ func parseOptions(args []string) (model.Options, error) {
 	fs.BoolVar(&opts.Yes, "yes", false, "reserved for non-interactive confirmation flows")
 	fs.BoolVar(&opts.Quiet, "quiet", false, "reduce console output")
 	fs.BoolVar(&opts.JSON, "json", false, "emit machine-readable JSON output")
+	fs.BoolVar(&opts.AI, "ai", false, "include controlled advisory analysis in the report")
 	fs.BoolVar(&opts.AuditOnly, "audit", false, "only audit residuals, do not execute removal actions")
 	fs.BoolVar(&opts.KeepCLI, "keep-cli", false, "keep CLI packages and wrappers")
 	fs.BoolVar(&opts.KeepApp, "keep-app", false, "keep app bundles and app data")
@@ -76,6 +79,9 @@ func parseOptions(args []string) (model.Options, error) {
 		opts.DryRun = true
 	case "verify":
 		opts.AuditOnly = true
+	case "explain":
+		opts.AuditOnly = true
+		opts.AI = true
 	}
 	return opts, nil
 }

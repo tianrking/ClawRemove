@@ -21,6 +21,7 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		"Product: " + report.Product,
 		"Command: " + report.Command,
 		"Platform: " + report.Discovery.Platform,
+		"Architecture: " + report.Host.Arch,
 		fmt.Sprintf("State dirs: %d", len(report.Discovery.StateDirs)),
 		fmt.Sprintf("Workspace dirs: %d", len(report.Discovery.WorkspaceDirs)),
 		fmt.Sprintf("Services: %d", len(report.Discovery.Services)),
@@ -48,6 +49,17 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 			if result.Error != "" {
 				line += " :: " + result.Error
 			}
+			lines = append(lines, line)
+		}
+	}
+	if report.Advice != nil {
+		lines = append(lines, "", "Advisor:")
+		lines = append(lines, "- Mode: "+report.Advice.Mode)
+		lines = append(lines, "- Authority: "+report.Advice.Authority)
+		lines = append(lines, "- Summary: "+report.Advice.ThoughtSummary)
+		lines = append(lines, "- Message: "+report.Advice.UserMessage)
+		for _, rec := range report.Advice.Recommendations {
+			line := fmt.Sprintf("- Recommendation: %s :: %s :: risk=%s :: evidence=%s", rec.Kind, rec.Target, rec.Risk, rec.Evidence)
 			lines = append(lines, line)
 		}
 	}

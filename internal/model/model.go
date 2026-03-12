@@ -7,6 +7,7 @@ type Options struct {
 	Yes           bool
 	Quiet         bool
 	JSON          bool
+	AI            bool
 	AuditOnly     bool
 	KeepCLI       bool
 	KeepApp       bool
@@ -15,6 +16,13 @@ type Options struct {
 	KillProcesses bool
 	RemoveDocker  bool
 	SourceRoot    string
+}
+
+type Host struct {
+	OS      string `json:"os"`
+	Arch    string `json:"arch"`
+	ExeExt  string `json:"exeExt,omitempty"`
+	HomeEnv string `json:"homeEnv,omitempty"`
 }
 
 type ProductFacts struct {
@@ -120,7 +128,28 @@ type Report struct {
 	Command   string    `json:"command"`
 	DryRun    bool      `json:"dryRun"`
 	AuditOnly bool      `json:"auditOnly"`
+	Host      Host      `json:"host"`
 	Discovery Discovery `json:"discovery"`
 	Plan      Plan      `json:"plan"`
 	Results   []Result  `json:"results"`
+	Advice    *Advice   `json:"advice,omitempty"`
+}
+
+type Recommendation struct {
+	Kind     string `json:"kind"`
+	Target   string `json:"target"`
+	Reason   string `json:"reason"`
+	Risk     string `json:"risk"`
+	OptIn    bool   `json:"optIn"`
+	Evidence string `json:"evidence"`
+}
+
+type Advice struct {
+	Mode            string           `json:"mode"`
+	Authority       string           `json:"authority"`
+	ThoughtSummary  string           `json:"thoughtSummary"`
+	NeededEvidence  []string         `json:"neededEvidence"`
+	Recommendations []Recommendation `json:"recommendations"`
+	RiskNotes       []string         `json:"riskNotes"`
+	UserMessage     string           `json:"userMessage"`
 }

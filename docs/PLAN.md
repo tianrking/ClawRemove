@@ -84,6 +84,7 @@ Implemented today:
 - multi-platform build scripts
 - baseline CI
 - multilingual README set
+- controlled advisor scaffold and `explain` command
 
 Still missing or incomplete:
 

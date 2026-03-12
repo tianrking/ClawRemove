@@ -72,6 +72,7 @@ claw-remove plan --product openclaw --json
 claw-remove apply --product openclaw --dry-run
 claw-remove apply --product openclaw
 claw-remove verify --product openclaw --json
+claw-remove explain --product openclaw --json
 ```
 
 ### 命令说明
@@ -86,6 +87,8 @@ claw-remove verify --product openclaw --json
   执行计划中的动作
 - `verify`
   卸载后的验证扫描
+- `explain`
+  在确定性发现结果之上输出受控的 advisory 分析
 
 ## 常用参数
 
@@ -93,6 +96,8 @@ claw-remove verify --product openclaw --json
   指定产品 provider，当前默认是 `openclaw`
 - `--json`
   输出结构化 JSON
+- `--ai`
+  在报告里附加受控的 advisory 分析
 - `--dry-run`
   只预演，不真正执行
 - `--keep-cli`
@@ -206,6 +211,12 @@ claw-remove apply --product openclaw
 
 ```bash
 claw-remove verify --product openclaw --json
+```
+
+查看受控解释分析：
+
+```bash
+claw-remove explain --product openclaw --json
 ```
 
 ## 路线图
