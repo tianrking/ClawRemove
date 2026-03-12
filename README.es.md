@@ -215,14 +215,14 @@ Si una automatizacion necesita JSON, conviene revisar primero con `plan` o `veri
 Según las reglas del proveedor y la plataforma, ClawRemove puede detectar:
 
 - directorios de estado
-- workspaces
+- workspaces (subdirectorios declarados por el proveedor)
 - rutas temporales y logs
 - bundles y datos de aplicación
 - launchd, systemd y tareas programadas
 - instalaciones con npm, pnpm, bun y Homebrew
-- residuos en perfiles del shell
+- residuos en perfiles del shell (verificados por contenido real, no solo por ruta)
 - procesos coincidentes
-- puertos en escucha
+- puertos en escucha (declarados por el proveedor, sin valores codificados)
 - referencias en crontab
 - contenedores e imágenes Docker o Podman
 

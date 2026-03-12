@@ -75,22 +75,37 @@ func (d Discoverer) discoverStateDirs(home string) []string {
 }
 
 func (d Discoverer) discoverWorkspaces(home string, stateDirs []string) []string {
-	out := []string{filepath.Join(home, ".openclaw", "workspace")}
-	if entries, err := os.ReadDir(filepath.Join(home, ".openclaw")); err == nil {
-		for _, entry := range entries {
-			if entry.IsDir() && (entry.Name() == "workspace" || strings.HasPrefix(entry.Name(), "workspace-")) {
-				out = append(out, filepath.Join(home, ".openclaw", entry.Name()))
+	var out []string
+
+	// Use provider-declared workspace dir names first
+	workspaceDirs := d.facts.WorkspaceDirNames
+	if len(workspaceDirs) == 0 {
+		// Fallback to convention: look for "workspace" subdirectory in each stateDir
+		for _, stateDir := range stateDirs {
+			out = append(out, filepath.Join(stateDir, "workspace"))
+		}
+	} else {
+		for _, stateDir := range stateDirs {
+			for _, wname := range workspaceDirs {
+				out = append(out, filepath.Join(stateDir, wname))
 			}
 		}
 	}
 
-	for _, dir := range stateDirs {
-		base := filepath.Base(dir)
-		if strings.HasPrefix(base, ".openclaw-") {
-			profile := strings.TrimPrefix(base, ".openclaw-")
-			out = append(out, filepath.Join(home, ".openclaw", "workspace-"+profile))
+	// Dynamic workspace variants discovered inside any matching state dir
+	for _, stateDir := range stateDirs {
+		if entries, err := os.ReadDir(stateDir); err == nil {
+			for _, entry := range entries {
+				if !entry.IsDir() {
+					continue
+				}
+				if strings.HasPrefix(entry.Name(), "workspace") {
+					out = append(out, filepath.Join(stateDir, entry.Name()))
+				}
+			}
 		}
 	}
+
 	return uniqExistingish(out)
 }
 
@@ -118,9 +133,14 @@ func (d Discoverer) discoverTempPaths() []string {
 func (d Discoverer) discoverShellProfiles(home string) []string {
 	var out []string
 	for _, rel := range d.facts.ShellProfileGlobs {
-		out = append(out, filepath.Join(home, filepath.FromSlash(rel)))
+		absPath := filepath.Join(home, filepath.FromSlash(rel))
+		// Only include profile if it exists AND contains a marker string
+		if !fileContainsMarker(absPath, d.facts.Markers) {
+			continue
+		}
+		out = append(out, absPath)
 	}
-	return uniqExisting(out)
+	return dedupe(out)
 }
 
 func (d Discoverer) discoverAppPaths(home string) []string {
@@ -334,7 +354,18 @@ func (d Discoverer) discoverListeners(ctx context.Context) []string {
 		for _, line := range strings.Split(result.Stdout, "\n") {
 			line = strings.TrimSpace(line)
 			lower := strings.ToLower(line)
-			if line != "" && (hasMarker(lower, d.facts.Markers) || strings.Contains(line, "18789") || strings.Contains(line, "19001")) {
+			if line == "" {
+				continue
+			}
+			markerMatch := hasMarker(lower, d.facts.Markers)
+			portMatch := false
+			for _, port := range d.facts.ListenerPorts {
+				if strings.Contains(line, itoa(port)) {
+					portMatch = true
+					break
+				}
+			}
+			if markerMatch || portMatch {
 				out = append(out, line)
 			}
 		}
@@ -570,4 +601,59 @@ func atoi(raw string) int {
 		value = value*10 + int(ch-'0')
 	}
 	return value
+}
+
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := ""
+	if n < 0 {
+		neg = "-"
+		n = -n
+	}
+	var buf [20]byte
+	i := len(buf)
+	for n > 0 {
+		i--
+		buf[i] = byte('0' + n%10)
+		n /= 10
+	}
+	return neg + string(buf[i:])
+}
+
+// fileContainsMarker reads the file at path and returns true if any line
+// contains at least one marker from the given list.
+func fileContainsMarker(path string, markers []string) bool {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		lower := strings.ToLower(strings.TrimSpace(line))
+		if lower == "" || strings.HasPrefix(lower, "#") {
+			continue
+		}
+		if hasMarker(lower, markers) {
+			return true
+		}
+	}
+	return false
+}
+
+// dedupe returns a slice with duplicate strings removed, preserving order.
+func dedupe(items []string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		out = append(out, item)
+	}
+	return out
 }

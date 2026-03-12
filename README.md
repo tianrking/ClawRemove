@@ -375,14 +375,14 @@ If you need JSON output for automation, use `plan` or `verify` for review first,
 Depending on platform and provider rules, ClawRemove can discover:
 
 - state directories
-- workspaces
+- workspaces (provider-declared workspace subdirectory names)
 - temp and log paths
 - app bundles and app data
 - launchd, systemd, and scheduled-task registrations
 - npm, pnpm, bun, and Homebrew installations
-- shell completion and profile traces
+- shell completion and profile traces (content-scanned against provider markers, not just path matched)
 - matching processes
-- listening ports
+- listening ports (provider-declared port list, not hard-coded)
 - crontab references
 - Docker and Podman containers and images
 

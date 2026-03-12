@@ -30,6 +30,7 @@ type ProductFacts struct {
 	ID                string
 	DisplayName       string
 	StateDirNames     []string
+	WorkspaceDirNames []string
 	ConfigNames       []string
 	Markers           []string
 	ShellProfileGlobs []string
@@ -37,6 +38,7 @@ type ProductFacts struct {
 	AppPaths          []string
 	CLIPaths          []string
 	PackageRefs       []PackageRef
+	ListenerPorts     []int
 }
 
 type PackageRef struct {

@@ -215,14 +215,14 @@ claw-remove explain --product openclaw --ai --json
 根据 provider 和平台规则，ClawRemove 可检测：
 
 - 状态目录
-- 工作区目录
+- 工作区目录（由 provider 声明的工作区子目录名称）
 - 临时目录和日志目录
 - 应用 bundle 与应用数据
 - launchd / systemd / scheduled tasks
 - npm / pnpm / bun / Homebrew 安装
-- shell profile / completion 残留
+- shell profile / completion 残留（通过内容扫描验证实际包含 marker，而非仅路径匹配）
 - 匹配进程
-- 监听端口
+- 监听端口（由 provider 的事实规则声明，不硬编码）
 - crontab 残留
 - Docker / Podman 容器与镜像
 

@@ -31,6 +31,12 @@ func (Provider) Facts() model.ProductFacts {
 			".openclaw-legacy",
 			".claw-dev",
 		},
+		WorkspaceDirNames: []string{
+			"workspace",
+			"workspaces",
+			"conversations",
+			"projects",
+		},
 		ConfigNames: []string{
 			"openclaw.json",
 			"clawdbot.json",
@@ -94,8 +100,11 @@ func (Provider) Facts() model.ProductFacts {
 			{Manager: "brew", Name: "openclaw", Kind: "formula"},
 			{Manager: "brew", Name: "openclaw", Kind: "cask"},
 		},
+		// OpenClaw's known gateway and IPC ports
+		ListenerPorts: []int{18789, 19001, 19002},
 	}
 }
+
 
 func (p Provider) Capabilities() model.ProviderCapabilities {
 	var caps model.ProviderCapabilities

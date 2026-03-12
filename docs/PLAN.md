@@ -10,6 +10,7 @@
 - Added multi-driver LLM support direction and implementation baseline for `openai`, `anthropic`, `openrouter`, `zhipu`, and `openai-compatible`.
 - Added confidence-based planning policy that downgrades low-confidence destructive actions to report-only.
 - Added optional provider/model routing trace output for multi-driver LLM chains.
+- **Smart discovery improvements**: shell profiles are now only included if they actually contain provider markers (content-scan); listener port matching is now driven by `ProductFacts.ListenerPorts` declared by each provider; workspace discovery is generalized to use `ProductFacts.WorkspaceDirNames` instead of hard-coded `.openclaw` paths.
 
 ## Mission
 
@@ -117,6 +118,7 @@ Implemented today:
 - JSON machine-consumable output contract documentation (`docs/OUTPUT_SCHEMA.md`)
 - provider-specific verification rules (`internal/verify/verify.go`)
 - clean separation between engine and CLI rendering using `internal/output`
+- smart discovery: shell profiles validated by content scan, listener ports declared per-provider, workspace dirs generalized across providers
 
 Still missing or incomplete:
 
@@ -223,7 +225,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Add snapshot tests for JSON output to prevent future regressions.
+1. Begin Phase 3: Stabilize cross-platform adapters for edge cases in processes and services.
 
 ## Rules For Agents
 
