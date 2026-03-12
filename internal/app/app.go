@@ -29,7 +29,8 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	}
 
 	runner := system.NewRunner()
-	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner), platform.Detect())
+	host := platform.Detect()
+	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host), host)
 	if options.Command == "apply" && !options.DryRun && !options.Yes {
 		if options.JSON {
 			return 2, errors.New("interactive apply requires a TTY-style confirmation; rerun without --json or use --yes after reviewing plan")

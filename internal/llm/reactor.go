@@ -6,18 +6,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/tianrking/ClawRemove/internal/llm/prompts"
 	llmproviders "github.com/tianrking/ClawRemove/internal/llm/providers"
 	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type controlledAdvisor struct {
-	client llmproviders.Client
-	config Config
-	runner system.Runner
+	client  llmproviders.Client
+	config  Config
+	runner  system.Runner
+	adapter platform.Adapter
 }
 
 type reactorStep struct {
@@ -31,7 +34,7 @@ type reactorStep struct {
 	UserMessage     string                 `json:"userMessage,omitempty"`
 }
 
-func NewAdvisorFromEnv(runner system.Runner) Advisor {
+func NewAdvisorFromEnv(runner system.Runner, host platform.Host) Advisor {
 	cfg := LoadConfigFromEnv()
 	if !cfg.Enabled {
 		return NewNoopAdvisor()
@@ -46,8 +49,9 @@ func NewAdvisorFromEnv(runner system.Runner) Advisor {
 			TimeoutSeconds: int(cfg.Timeout.Seconds()),
 			UserAgent:      cfg.UserAgent,
 		}),
-		config: cfg,
-		runner: runner,
+		config:  cfg,
+		runner:  runner,
+		adapter: platform.NewAdapter(host),
 	}
 }
 
@@ -286,18 +290,8 @@ func (a controlledAdvisor) serviceProbe(report model.Report, input map[string]an
 				result["filePreview"] = lines
 			}
 		}
-		switch svc.Platform {
-		case "linux":
-			args := []string{"status", svc.Name + ".service", "--no-pager"}
-			if svc.Scope == "user" {
-				args = append([]string{"--user"}, args...)
-			}
-			cmd := append([]string{"systemctl"}, args...)
+		if cmd := a.adapter.ServiceStatusCommand(svc, currentUID()); len(cmd) > 0 {
 			result["status"] = runReadOnly(a.runner, cmd)
-		case "darwin":
-			result["status"] = runReadOnly(a.runner, []string{"launchctl", "print", "gui/" + itoa(os.Getuid()) + "/" + svc.Name})
-		case "windows":
-			result["status"] = runReadOnly(a.runner, []string{"schtasks", "/Query", "/TN", svc.Name, "/V", "/FO", "LIST"})
 		}
 		return result, nil
 	}
@@ -342,8 +336,8 @@ func (a controlledAdvisor) processProbe(report model.Report, input map[string]an
 			"ppid":    proc.PPID,
 			"command": proc.Command,
 		}
-		if proc.PID > 0 {
-			result["status"] = runReadOnly(a.runner, []string{"ps", "-p", itoa(proc.PID), "-o", "pid=,ppid=,etime=,command="})
+		if cmd := a.adapter.ProcessStatusCommand(proc.PID); len(cmd) > 0 {
+			result["status"] = runReadOnly(a.runner, cmd)
 		}
 		return result, nil
 	}
@@ -441,24 +435,20 @@ func packageReadOnlyCommand(pkg model.PackageRef) []string {
 	}
 }
 
-func itoa(value int) string {
-	if value == 0 {
-		return "0"
-	}
-	var buf [32]byte
-	i := len(buf)
-	for value > 0 {
-		i--
-		buf[i] = byte('0' + (value % 10))
-		value /= 10
-	}
-	return string(buf[i:])
-}
-
 func mustJSON(value any) string {
 	body, err := json.Marshal(value)
 	if err != nil {
 		return "{}"
 	}
 	return string(body)
+}
+
+func currentUID() string {
+	if runtime.GOOS == "windows" {
+		return "0"
+	}
+	if uid := strings.TrimSpace(os.Getenv("UID")); uid != "" {
+		return uid
+	}
+	return "0"
 }

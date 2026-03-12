@@ -103,6 +103,7 @@ The first implementation of this architecture is now present:
 - a controlled ReAct loop
 - an explicit `internal/evidence` layer
 - an initial `internal/llm/prompts` and `internal/llm/providers` split
+- initial platform adapters for darwin/linux/windows used by controlled probes
 - a read-only tool protocol over in-memory discovery and plan data
 - provider-specific skills and tools metadata
 - a hard boundary that prevents the model from issuing destructive commands directly
@@ -285,6 +286,7 @@ Current state:
 - still needs a dedicated evidence layer
 - still needs stronger platform adapters
 - still needs a fuller split inside the LLM subsystem
+- still needs broader platform adapter coverage beyond probe command routing
 
 ClawRemove is intentionally being shaped toward a stricter architecture now, before more providers and models make the code harder to untangle.
 

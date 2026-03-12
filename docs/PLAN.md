@@ -93,6 +93,7 @@ Implemented today:
 - residual verification classifier with confirmed versus investigate buckets
 - provider capability model with provider-specific skills and tools
 - explicit `internal/evidence` layer and partial LLM split into prompts/providers/reactor
+- initial `internal/platform` adapters (darwin/linux/windows) wired into controlled probe commands
 - explicit architecture assessment in `docs/ARCHITECTURE.md`
 
 Still missing or incomplete:

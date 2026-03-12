@@ -228,6 +228,12 @@ The current implementation is good enough for now, but it is still concentrated 
 
 The split has started with dedicated `prompts` and `providers` packages, but tool mediation and reactor control still need a cleaner boundary.
 
+### `platform`
+
+The adapter split has now started with explicit `darwin`, `linux`, and `windows` adapter types and integration into controlled probe commands.
+
+It still needs broader adoption in discovery and planning paths to remove remaining OS conditionals.
+
 ## Coupling Review
 
 ### Good decoupling already present
