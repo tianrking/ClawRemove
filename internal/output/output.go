@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -87,4 +88,51 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 	}
 	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
 	return err
+}
+
+func PrintProducts(w io.Writer, providers []model.ProductFacts, jsonMode bool) error {
+	if jsonMode {
+		_, err := io.WriteString(w, "[")
+		if err != nil {
+			return err
+		}
+		for i, p := range providers {
+			if i > 0 {
+				if _, err := io.WriteString(w, ","); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(w, fmt.Sprintf(`{"id":"%s","displayName":"%s"}`, p.ID, p.DisplayName)); err != nil {
+				return err
+			}
+		}
+		_, err = io.WriteString(w, "]\n")
+		return err
+	}
+	for _, p := range providers {
+		if _, err := io.WriteString(w, p.ID+"\t"+p.DisplayName+"\n"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ConfirmApply(reader io.Reader, stdout io.Writer, stderr io.Writer, product string, report model.Report) (bool, error) {
+	_, _ = io.WriteString(stdout, "\nSafety check:\n")
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Confirmed residuals: %d\n", len(report.Verify.Confirmed)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Investigate residuals: %d\n", len(report.Verify.Investigate)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Planned actions: %d\n", len(report.Plan.Actions)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("Type REMOVE %s to continue: ", strings.ToUpper(product)))
+
+	br := bufio.NewReader(reader)
+	line, err := br.ReadString('\n')
+	if err != nil && !strings.Contains(err.Error(), "EOF") {
+		return false, err
+	}
+	expected := "REMOVE " + strings.ToUpper(product)
+	if strings.TrimSpace(line) != expected {
+		_, _ = io.WriteString(stderr, "Confirmation phrase did not match. No removal actions were executed.\n")
+		return false, nil
+	}
+	return true, nil
 }

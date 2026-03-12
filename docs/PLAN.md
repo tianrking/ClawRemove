@@ -116,6 +116,7 @@ Implemented today:
 - provider conformance test suite (`internal/products/conformance_test.go`)
 - JSON machine-consumable output contract documentation (`docs/OUTPUT_SCHEMA.md`)
 - provider-specific verification rules (`internal/verify/verify.go`)
+- clean separation between engine and CLI rendering using `internal/output`
 
 Still missing or incomplete:
 
@@ -222,7 +223,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Preserve clean separation between engine and CLI rendering by consolidating print logic into `internal/output`.
+1. Add snapshot tests for JSON output to prevent future regressions.
 
 ## Rules For Agents
 

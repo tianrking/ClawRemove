@@ -1,14 +1,12 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/tianrking/ClawRemove/internal/core"
 	"github.com/tianrking/ClawRemove/internal/llm"
@@ -31,7 +29,11 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 0, nil
 	}
 	if options.Command == "products" {
-		return 0, printProducts(stdout, options.JSON)
+		var facts []model.ProductFacts
+		for _, p := range products.Registry() {
+			facts = append(facts, model.ProductFacts{ID: p.ID(), DisplayName: p.DisplayName()})
+		}
+		return 0, output.PrintProducts(stdout, facts, options.JSON)
 	}
 
 	provider, err := products.Resolve(options.Product)
@@ -55,7 +57,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		if err := output.PrintReport(stdout, report, false); err != nil {
 			return 1, err
 		}
-		confirmed, err := confirmApply(stdout, stderr, options.Product, report)
+		confirmed, err := output.ConfirmApply(os.Stdin, stdout, stderr, options.Product, report)
 		if err != nil {
 			return 1, err
 		}
@@ -74,26 +76,6 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 1, errors.New("one or more actions failed")
 	}
 	return 0, nil
-}
-
-func confirmApply(stdout io.Writer, stderr io.Writer, product string, report model.Report) (bool, error) {
-	_, _ = io.WriteString(stdout, "\nSafety check:\n")
-	_, _ = io.WriteString(stdout, fmt.Sprintf("- Confirmed residuals: %d\n", len(report.Verify.Confirmed)))
-	_, _ = io.WriteString(stdout, fmt.Sprintf("- Investigate residuals: %d\n", len(report.Verify.Investigate)))
-	_, _ = io.WriteString(stdout, fmt.Sprintf("- Planned actions: %d\n", len(report.Plan.Actions)))
-	_, _ = io.WriteString(stdout, fmt.Sprintf("Type REMOVE %s to continue: ", strings.ToUpper(product)))
-
-	reader := bufio.NewReader(os.Stdin)
-	line, err := reader.ReadString('\n')
-	if err != nil && !errors.Is(err, io.EOF) {
-		return false, err
-	}
-	expected := "REMOVE " + strings.ToUpper(product)
-	if strings.TrimSpace(line) != expected {
-		_, _ = io.WriteString(stderr, "Confirmation phrase did not match. No removal actions were executed.\n")
-		return false, nil
-	}
-	return true, nil
 }
 
 func parseOptions(args []string) (model.Options, error) {
@@ -144,29 +126,3 @@ func parseOptions(args []string) (model.Options, error) {
 	return opts, nil
 }
 
-func printProducts(w io.Writer, jsonMode bool) error {
-	if jsonMode {
-		_, err := io.WriteString(w, "[")
-		if err != nil {
-			return err
-		}
-		for i, provider := range products.Registry() {
-			if i > 0 {
-				if _, err := io.WriteString(w, ","); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(w, fmt.Sprintf(`{"id":"%s","displayName":"%s"}`, provider.ID(), provider.DisplayName())); err != nil {
-				return err
-			}
-		}
-		_, err = io.WriteString(w, "]\n")
-		return err
-	}
-	for _, provider := range products.Registry() {
-		if _, err := io.WriteString(w, provider.ID()+"\t"+provider.DisplayName()+"\n"); err != nil {
-			return err
-		}
-	}
-	return nil
-}
