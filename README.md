@@ -102,8 +102,9 @@ The first implementation of this architecture is now present:
 - multi-provider LLM support for OpenAI, Anthropic, and other OpenAI-compatible APIs
 - a controlled ReAct loop
 - an explicit `internal/evidence` layer
-- an initial `internal/llm/prompts` and `internal/llm/providers` split
-- initial platform adapters for darwin/linux/windows used by controlled probes
+- explicit evidence provenance (`rule`, `source`, `confidence`) consumed by planning and verification
+- a split LLM stack with `internal/llm/prompts`, `internal/llm/providers`, and `internal/llm/mediation`
+- platform adapters for darwin/linux/windows used by controlled probes, discovery, and planning
 - a read-only tool protocol over in-memory discovery and plan data
 - provider-specific skills and tools metadata
 - a hard boundary that prevents the model from issuing destructive commands directly

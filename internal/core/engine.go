@@ -31,14 +31,14 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 		return model.Report{}, err
 	}
 
-	discoverer := discovery.New(e.runner, provider.Facts())
+	discoverer := discovery.New(e.runner, provider.Facts(), e.host)
 	discovered, err := discoverer.Discover(ctx)
 	if err != nil {
 		return model.Report{}, err
 	}
 
 	evidenceSet := evidence.Build(discovered, provider.Facts())
-	executionPlan := plan.Build(discovered, evidenceSet, provider.Facts(), options)
+	executionPlan := plan.Build(discovered, evidenceSet, provider.Facts(), options, e.host)
 	verification := verify.Classify(evidenceSet)
 	var results []model.Result
 	if options.Command == "apply" && !options.AuditOnly {

@@ -4,8 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/tianrking/ClawRemove/internal/llm/mediation"
 	llmproviders "github.com/tianrking/ClawRemove/internal/llm/providers"
 	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/platform"
+	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type fakeClient struct {
@@ -51,21 +54,21 @@ func TestControlledAdvisorRunsReadOnlyToolLoop(t *testing.T) {
 }
 
 func TestExecuteToolRejectsUnsupportedTool(t *testing.T) {
-	advisor := controlledAdvisor{}
-	_, err := advisor.executeTool(model.Report{}, "destroy_system", nil)
+	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}))
+	_, err := mediator.ExecuteTool(model.Report{}, "destroy_system", map[string]any{})
 	if err == nil {
 		t.Fatal("expected unsupported tool error")
 	}
 }
 
 func TestPathProbeRejectsUnknownTarget(t *testing.T) {
-	advisor := controlledAdvisor{}
+	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}))
 	report := model.Report{
 		Discovery: model.Discovery{
 			StateDirs: []string{"/tmp/.openclaw"},
 		},
 	}
-	_, err := advisor.executeTool(report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
+	_, err := mediator.ExecuteTool(report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
 	if err == nil {
 		t.Fatal("expected path probe to reject unknown target")
 	}

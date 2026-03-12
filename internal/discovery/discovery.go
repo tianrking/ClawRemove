@@ -5,22 +5,29 @@ import (
 	"encoding/csv"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"unicode"
 
 	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type Discoverer struct {
-	runner system.Runner
-	facts  model.ProductFacts
+	runner  system.Runner
+	facts   model.ProductFacts
+	host    platform.Host
+	adapter platform.Adapter
 }
 
-func New(runner system.Runner, facts model.ProductFacts) Discoverer {
-	return Discoverer{runner: runner, facts: facts}
+func New(runner system.Runner, facts model.ProductFacts, host platform.Host) Discoverer {
+	return Discoverer{
+		runner:  runner,
+		facts:   facts,
+		host:    host,
+		adapter: platform.NewAdapter(host),
+	}
 }
 
 func (d Discoverer) Discover(ctx context.Context) (model.Discovery, error) {
@@ -31,7 +38,7 @@ func (d Discoverer) Discover(ctx context.Context) (model.Discovery, error) {
 
 	stateDirs := d.discoverStateDirs(home)
 	return model.Discovery{
-		Platform:      runtime.GOOS,
+		Platform:      d.host.OS,
 		HomeDir:       home,
 		StateDirs:     stateDirs,
 		WorkspaceDirs: d.discoverWorkspaces(home, stateDirs),
@@ -146,7 +153,7 @@ func (d Discoverer) discoverPackages(ctx context.Context) []model.PackageRef {
 		case "npm", "pnpm", "bun":
 			out = append(out, ref)
 		case "brew":
-			if runtime.GOOS != "darwin" {
+			if d.host.OS != "darwin" {
 				continue
 			}
 			args := []string{"list"}
@@ -164,7 +171,7 @@ func (d Discoverer) discoverPackages(ctx context.Context) []model.PackageRef {
 }
 
 func (d Discoverer) discoverServices(ctx context.Context, home string) []model.ServiceRef {
-	switch runtime.GOOS {
+	switch d.host.OS {
 	case "darwin":
 		return d.discoverDarwinServices(home)
 	case "linux":
@@ -237,10 +244,11 @@ func (d Discoverer) discoverLinuxServices(home string) []model.ServiceRef {
 }
 
 func (d Discoverer) discoverWindowsServices(ctx context.Context) []model.ServiceRef {
-	if !d.runner.Exists(ctx, "schtasks") {
+	cmd := d.adapter.ScheduledTaskListCommand()
+	if len(cmd) == 0 || !d.runner.Exists(ctx, cmd[0]) {
 		return nil
 	}
-	result := d.runner.Run(ctx, "schtasks", "/Query", "/FO", "LIST", "/V")
+	result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
 	if !result.OK {
 		return nil
 	}
@@ -266,8 +274,16 @@ func (d Discoverer) discoverWindowsServices(ctx context.Context) []model.Service
 }
 
 func (d Discoverer) discoverProcesses(ctx context.Context) []model.ProcessRef {
-	if runtime.GOOS == "windows" {
-		result := d.runner.Run(ctx, "tasklist", "/V", "/FO", "CSV")
+	cmd := d.adapter.ProcessListCommand()
+	if len(cmd) == 0 || !d.runner.Exists(ctx, cmd[0]) {
+		return nil
+	}
+
+	result := d.runner.Run(ctx, cmd[0], cmd[1:]...)
+	if !result.OK {
+		return nil
+	}
+	if d.host.OS == "windows" {
 		if !result.OK {
 			return nil
 		}
@@ -283,10 +299,6 @@ func (d Discoverer) discoverProcesses(ctx context.Context) []model.ProcessRef {
 		return out
 	}
 
-	result := d.runner.Run(ctx, "ps", "ax", "-o", "pid=,ppid=,command=")
-	if !result.OK {
-		return nil
-	}
 	var out []model.ProcessRef
 	for _, line := range strings.Split(result.Stdout, "\n") {
 		line = strings.TrimSpace(line)
@@ -309,16 +321,7 @@ func (d Discoverer) discoverProcesses(ctx context.Context) []model.ProcessRef {
 }
 
 func (d Discoverer) discoverListeners(ctx context.Context) []string {
-	candidates := [][]string{}
-	switch runtime.GOOS {
-	case "darwin":
-		candidates = append(candidates, []string{"lsof", "-nP", "-iTCP", "-sTCP:LISTEN"})
-	case "linux":
-		candidates = append(candidates, []string{"ss", "-lptn"}, []string{"netstat", "-lntp"})
-	case "windows":
-		candidates = append(candidates, []string{"netstat", "-ano"})
-	}
-
+	candidates := d.adapter.ListenerCommands()
 	for _, candidate := range candidates {
 		if !d.runner.Exists(ctx, candidate[0]) {
 			continue
@@ -343,7 +346,7 @@ func (d Discoverer) discoverListeners(ctx context.Context) []string {
 }
 
 func (d Discoverer) discoverCrontab(ctx context.Context) []string {
-	if runtime.GOOS == "windows" || !d.runner.Exists(ctx, "crontab") {
+	if d.host.OS == "windows" || !d.runner.Exists(ctx, "crontab") {
 		return nil
 	}
 	result := d.runner.Run(ctx, "crontab", "-l")

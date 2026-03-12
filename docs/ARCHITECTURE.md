@@ -26,11 +26,10 @@ Why it is good today:
 Where it is still imperfect:
 
 - `internal/core/engine.go` still orchestrates too much directly
-- `internal/llm/reactor.go` contains tool protocol, tool execution, and prompt logic in one package
+- `internal/llm/reactor.go` still contains reactor orchestration and tool protocol naming; execution has been split to mediation
 - provider skills and tools are still metadata catalogs rather than fully isolated runtime contracts
-- `plan` still builds from raw discovery instead of a stronger evidence graph
-- `verify` is useful, but not yet a full evidence engine with traceable provenance
-- `platform` exists, but is still a thin host abstraction rather than a true adapter layer
+- `plan` still consumes discovery-shaped objects in addition to evidence
+- `platform` has adapters, but discovery/service edge cases need deeper OS-specific coverage
 
 Conclusion:
 
@@ -228,15 +227,15 @@ The LLM system should eventually split into:
 
 The current implementation is good enough for now, but it is still concentrated in a single `reactor.go`.
 
-The split has started with dedicated `prompts` and `providers` packages, but tool mediation and reactor control still need a cleaner boundary.
+The split now includes `prompts`, `providers`, and `mediation`. Reactor orchestration can be further isolated as its own package next.
 
 The provider layer now supports multi-driver chains for OpenAI, Anthropic, OpenRouter, Zhipu, and OpenAI-compatible endpoints.
 
 ### `platform`
 
-The adapter split has now started with explicit `darwin`, `linux`, and `windows` adapter types and integration into controlled probe commands.
+The adapter split now includes explicit `darwin`, `linux`, and `windows` adapter types integrated into controlled probes, discovery, and planning paths.
 
-It still needs broader adoption in discovery and planning paths to remove remaining OS conditionals.
+Remaining work is primarily edge-case coverage and adapter-level tests.
 
 ## Coupling Review
 
@@ -250,9 +249,9 @@ It still needs broader adoption in discovery and planning paths to remove remain
 ### Coupling that still exists
 
 - `plan` depends directly on discovery layout rather than a richer evidence layer
-- `llm/reactor.go` knows too much about tool names and tool execution
+- `llm/reactor.go` still knows tool naming/protocol details, even though execution moved to `llm/mediation`
 - provider capabilities are defined in product packages but not yet strongly consumed by `skills` and `tools`
-- some OS logic still lives in discovery and plan rather than a dedicated platform adapter
+- some OS discovery details (especially service variants) still need deeper adapter coverage
 
 ## Controlled AI Boundary
 
@@ -271,11 +270,11 @@ This is what lets ClawRemove behave like a smart agent without turning into anot
 
 The next architectural refactor should follow this order:
 
-1. Deepen `internal/evidence` so it carries provenance, provider rules, and stronger planning inputs.
-2. Finish splitting the LLM subsystem into `prompts`, `providers`, and `reactor`.
-3. Move OS-specific logic toward `internal/platform/*`.
-4. Turn `internal/skills` and `internal/tools` into real contracts, not only catalogs.
-5. Make `plan` consume evidence everywhere instead of relying on raw discovery lookups.
+1. Turn `internal/skills` and `internal/tools` into real runtime contracts, not only catalogs.
+2. Extract reactor orchestration into a tighter package boundary.
+3. Expand adapter-level discovery coverage for OS service variants.
+4. Move planning inputs closer to evidence-first graph objects.
+5. Add regression tests for provenance-aware planning policy.
 
 ## Architecture Decision For This Version
 

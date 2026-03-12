@@ -9,11 +9,35 @@ func (genericAdapter) ServiceStatusCommand(service model.ServiceRef, _ string) [
 	return nil
 }
 
+func (genericAdapter) ServiceDisableCommand(service model.ServiceRef) []string {
+	_ = service
+	return nil
+}
+
+func (genericAdapter) ProcessListCommand() []string {
+	return []string{"ps", "ax", "-o", "pid=,ppid=,command="}
+}
+
 func (genericAdapter) ProcessStatusCommand(pid int) []string {
 	if pid <= 0 {
 		return nil
 	}
 	return []string{"ps", "-p", itoa(pid), "-o", "pid=,ppid=,etime=,command="}
+}
+
+func (genericAdapter) ProcessTerminateCommand(pid int) []string {
+	if pid <= 0 {
+		return nil
+	}
+	return []string{"kill", "-TERM", itoa(pid)}
+}
+
+func (genericAdapter) ListenerCommands() [][]string {
+	return nil
+}
+
+func (genericAdapter) ScheduledTaskListCommand() []string {
+	return nil
 }
 
 func itoa(value int) string {

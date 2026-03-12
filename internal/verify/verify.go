@@ -6,11 +6,14 @@ func Classify(evidence model.EvidenceSet) model.Verification {
 	var all []model.Residual
 	for _, item := range evidence.Items {
 		all = append(all, model.Residual{
-			Kind:     item.Kind,
-			Target:   item.Target,
-			Evidence: item.Strength,
-			Reason:   item.Reason,
-			Risk:     item.Risk,
+			Kind:       item.Kind,
+			Target:     item.Target,
+			Evidence:   item.Strength,
+			Reason:     item.Reason,
+			Risk:       item.Risk,
+			Rule:       item.Rule,
+			Source:     item.Source,
+			Confidence: item.Confidence,
 		})
 	}
 

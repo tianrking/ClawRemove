@@ -12,9 +12,39 @@ func (linuxAdapter) ServiceStatusCommand(service model.ServiceRef, _ string) []s
 	return append([]string{"systemctl"}, args...)
 }
 
+func (linuxAdapter) ServiceDisableCommand(service model.ServiceRef) []string {
+	args := []string{"disable", "--now", service.Name + ".service"}
+	if service.Scope == "user" {
+		args = append([]string{"--user"}, args...)
+	}
+	return append([]string{"systemctl"}, args...)
+}
+
+func (linuxAdapter) ProcessListCommand() []string {
+	return []string{"ps", "ax", "-o", "pid=,ppid=,command="}
+}
+
 func (linuxAdapter) ProcessStatusCommand(pid int) []string {
 	if pid <= 0 {
 		return nil
 	}
 	return []string{"ps", "-p", itoa(pid), "-o", "pid=,ppid=,etime=,command="}
+}
+
+func (linuxAdapter) ProcessTerminateCommand(pid int) []string {
+	if pid <= 0 {
+		return nil
+	}
+	return []string{"kill", "-TERM", itoa(pid)}
+}
+
+func (linuxAdapter) ListenerCommands() [][]string {
+	return [][]string{
+		{"ss", "-lptn"},
+		{"netstat", "-lntp"},
+	}
+}
+
+func (linuxAdapter) ScheduledTaskListCommand() []string {
+	return nil
 }

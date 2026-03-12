@@ -99,14 +99,17 @@ const (
 )
 
 type Action struct {
-	Kind     ActionKind `json:"kind"`
-	Target   string     `json:"target"`
-	Reason   string     `json:"reason"`
-	Evidence string     `json:"evidence,omitempty"`
-	Command  []string   `json:"command,omitempty"`
-	Platform string     `json:"platform,omitempty"`
-	Risk     string     `json:"risk,omitempty"`
-	HighRisk bool       `json:"highRisk,omitempty"`
+	Kind       ActionKind `json:"kind"`
+	Target     string     `json:"target"`
+	Reason     string     `json:"reason"`
+	Evidence   string     `json:"evidence,omitempty"`
+	Rule       string     `json:"rule,omitempty"`
+	Source     string     `json:"source,omitempty"`
+	Confidence float64    `json:"confidence,omitempty"`
+	Command    []string   `json:"command,omitempty"`
+	Platform   string     `json:"platform,omitempty"`
+	Risk       string     `json:"risk,omitempty"`
+	HighRisk   bool       `json:"highRisk,omitempty"`
 }
 
 type Plan struct {
@@ -140,11 +143,14 @@ type Report struct {
 }
 
 type Residual struct {
-	Kind     string `json:"kind"`
-	Target   string `json:"target"`
-	Evidence string `json:"evidence"`
-	Reason   string `json:"reason"`
-	Risk     string `json:"risk,omitempty"`
+	Kind       string  `json:"kind"`
+	Target     string  `json:"target"`
+	Evidence   string  `json:"evidence"`
+	Reason     string  `json:"reason"`
+	Risk       string  `json:"risk,omitempty"`
+	Rule       string  `json:"rule,omitempty"`
+	Source     string  `json:"source,omitempty"`
+	Confidence float64 `json:"confidence,omitempty"`
 }
 
 type VerificationSummary struct {

@@ -3,10 +3,12 @@
 ## Latest Progress
 
 - Added `internal/evidence` and moved verification/classification flow to consume evidence.
-- Updated planning to consume evidence and attach evidence strength to actions.
+- Updated planning to consume evidence and attach full provenance to actions.
 - Split LLM stack into clearer layers with `internal/llm/prompts` and `internal/llm/providers`.
-- Added initial platform adapters (`darwin`, `linux`, `windows`) and routed controlled probe status commands through adapters.
+- Split tool mediation into `internal/llm/mediation` so reactor focuses on orchestration.
+- Added platform adapters (`darwin`, `linux`, `windows`) and routed controlled probes, discovery, and planning through adapters.
 - Added multi-driver LLM support direction and implementation baseline for `openai`, `anthropic`, `openrouter`, `zhipu`, and `openai-compatible`.
+- Added confidence-based planning policy that downgrades low-confidence destructive actions to report-only.
 
 ## Mission
 
@@ -107,12 +109,12 @@ Implemented today:
 
 Still missing or incomplete:
 
-- stronger platform-specific adapters
+- deeper platform-specific service discovery edge cases and test coverage
 - formal release packaging and checksums
 - richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
 - a richer provider skill and tool authoring workflow
-- a fuller split of prompts, providers, and reactor logic inside `internal/llm`
+- richer provider/runtime tool contracts for `skills` and `tools`
 
 ## Delivery Phases
 
@@ -218,12 +220,10 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Add version injection and release packaging.
-2. Complete evidence provenance (rule id, source, confidence) and use it in planning policy.
-3. Finish the LLM split by moving tool mediation out of `reactor.go`.
-4. Expand platform adapter usage into discovery and planning paths.
-5. Turn `internal/skills` and `internal/tools` into runtime contracts.
-6. Expand OpenClaw legacy aliases and service naming coverage.
-7. Add provider-aware multi-model routing trace output and GitHub release automation.
+2. Turn `internal/skills` and `internal/tools` into runtime contracts.
+3. Expand OpenClaw legacy aliases and service naming coverage.
+4. Add provider-aware multi-model routing trace output and GitHub release automation.
+5. Add deeper platform adapter tests for service/process/listener edge cases.
 
 ## Rules For Agents
 

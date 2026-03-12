@@ -1,11 +1,14 @@
 package model
 
 type Evidence struct {
-	Kind     string `json:"kind"`
-	Target   string `json:"target"`
-	Strength string `json:"strength"`
-	Reason   string `json:"reason"`
-	Risk     string `json:"risk,omitempty"`
+	Kind       string  `json:"kind"`
+	Target     string  `json:"target"`
+	Strength   string  `json:"strength"`
+	Reason     string  `json:"reason"`
+	Risk       string  `json:"risk,omitempty"`
+	Rule       string  `json:"rule,omitempty"`
+	Source     string  `json:"source,omitempty"`
+	Confidence float64 `json:"confidence,omitempty"`
 }
 
 type EvidenceSummary struct {
