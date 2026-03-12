@@ -1,6 +1,7 @@
 <div align="center">
   <h1>ClawRemove</h1>
-  <p><strong>A surgical, cross-platform AI Agent removal engine.</strong></p>
+  <p><strong>Agent Environment Inspector</strong></p>
+  <p><em>Inspect, audit and clean environments where AI agents run.</em></p>
   <p>
     <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
@@ -11,24 +12,33 @@
   <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
 </div>
 
-ClawRemove is a professional cross-platform AI Agent removal engine written in Go.
+ClawRemove is an **Agent Environment Inspector** - a tool to inspect, audit, and clean environments where AI agents run.
 
-Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of AI agents like OpenClaw, NanoBot, PicoClaw, and other AI assistant tools without behaving like a generic cleaner that sprays changes across the system.
+It focuses on AI agent runtime, tools, and artifacts - not general system cleaning or security scanning.
 
-ClawRemove is designed to be:
+## What ClawRemove Does
 
-- evidence-driven
-- conservative by default
-- safe to audit before execution
-- portable across macOS, Linux, and Windows
-- extensible through product providers
-- suitable for both CLI-first workflows and future desktop control software
+- **Detect** AI runtimes (Ollama, LM Studio, GPT4All, LocalAI)
+- **Audit** agent installations (OpenClaw, NanoBot, Cursor, Windsurf)
+- **Analyze** AI storage (models, caches, vector databases)
+- **Clean** agent environments safely
+- **Check** for exposed API keys in AI tool configs
 
-ClawRemove should be understood as a controlled uninstall tool:
+## Quick Start
 
-- it understands how AI agents install, persist, and leave residue
-- it uses that understanding to remove them cleanly
-- it does not become a noisy resident agent itself
+```bash
+# Full environment audit
+clawremove audit
+
+# Check for exposed API keys
+clawremove security
+
+# Analyze AI storage usage
+clawremove hygiene
+
+# Clean up an agent
+clawremove cleanup --product openclaw
+```
 
 ## Documentation
 

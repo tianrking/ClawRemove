@@ -1,301 +1,336 @@
 # ClawRemove Development Plan
 
-## Strategic Directions
+## Core Positioning
 
-ClawRemove has three core directions that provide real value:
+**Agent Environment Inspector**
 
-### 1. AI Environment Inspector (Primary)
+Inspect, audit and clean environments where AI agents run.
 
-The most reasonable direction - scan and inventory AI environments:
+AI Agent 运行环境检测与治理工具
+
+### What ClawRemove IS
+
+- AI Agent runtime detection
+- AI Agent tool detection
+- AI Agent artifact detection
+- AI Agent environment cleanup
+
+### What ClawRemove IS NOT
+
+- System cleaner (like CCleaner)
+- Security scanner (like Nessus)
+- AI model trainer
+- AI data processor
+
+## Agent Ecosystem Structure
+
+ClawRemove scans 4 layers of the agent ecosystem:
+
+```
+┌─────────────────────────────┐
+│ Agent Applications          │  Layer 4
+│ openclaw / nanobot / cursor │
+│ windsurf / aider / cline    │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│ Agent Frameworks            │  Layer 3
+│ LangChain / LangGraph       │
+│ AutoGen / CrewAI            │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│ AI Runtime                  │  Layer 2
+│ Ollama / LocalAI / vLLM     │
+│ llama.cpp / LM Studio       │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│ AI Artifacts                │  Layer 1
+│ models / embeddings         │
+│ vector db / cache           │
+└─────────────────────────────┘
+```
+
+## Core Capabilities
+
+### 1. Agent Runtime Detection
+
+Detect local LLM runtimes.
 
 ```bash
-claw-remove audit
+clawremove audit
 ```
 
-Outputs:
-- AI runtimes detected (Ollama, LM Studio, GPT4All)
-- AI frameworks installed (langchain, openai sdk, transformers)
-- AI model artifacts (llama models, cached models)
-- AI tools installed (cursor, openclaw, windsurf)
-- Storage analysis (model cache sizes)
+Output:
+```
+AI Runtime
+----------
+Ollama detected
+  Models: 42GB
+  Running: yes
+  Port: 11434
 
-Similar to: `docker info`, `brew doctor`
+LM Studio detected
+  Models: 12GB
+  Running: no
+```
 
-### 2. AI Tool Uninstaller (Original)
+Detection methods:
+- Binary presence
+- Service status
+- Model paths
+- Config files
 
-Deep uninstall for AI tools:
+### 2. Agent Tool Detection
+
+Detect agent applications and frameworks.
 
 ```bash
-claw-remove apply --product cursor
+clawremove audit
 ```
 
-Supports:
-- Cursor
-- OpenClaw
-- Windsurf
-- Aider
-- Cline
-- Continue.dev
+Output:
+```
+Agent Tools
+-----------
+Applications:
+  OpenClaw installed at ~/.openclaw
+  Cursor installed at ~/.cursor
+  NanoBot installed at ~/.nanobot
 
-### 3. AI Machine Hygiene Tool (Future)
+Frameworks:
+  LangChain installed (pip)
+  OpenAI SDK installed (npm)
+  Transformers installed (pip)
+```
 
-Check AI resource usage:
+Detection methods:
+- Repository paths
+- pip/npm packages
+- Docker containers
+- State directories
+
+### 3. Agent Artifact Detection
+
+Detect AI-generated resources.
 
 ```bash
-claw-remove hygiene
+clawremove audit
 ```
 
-Reports:
-- AI storage: 86GB (model caches)
-- Vector databases running
-- GPU memory usage by AI processes
-- Orphaned model files
+Output:
+```
+AI Artifacts
+------------
+Models:
+  Ollama: 64GB
+  HuggingFace Cache: 21GB
+  LM Studio: 12GB
 
-## Latest Progress
+Vector Databases:
+  ChromaDB: 8GB at ~/.chromadb
 
-- **Multi-Provider Architecture**: ClawRemove is now an Agent Removal Framework supporting multiple AI agents.
-- **New Providers Added**: NanoBot and PicoClaw providers added alongside OpenClaw.
-- **Windows Registry Support**: Added Windows registry detection and cleanup capabilities.
-- **Environment Variable Detection**: Added environment variable discovery for all platforms.
-- **Hosts File Detection**: Added hosts file entry detection.
-- **Enhanced Service Discovery**: Improved macOS launchd, Linux systemd (including timers/sockets), and Windows scheduled task detection.
-- **Platform Adapter Interface**: Extended with registry, environment, and hosts file methods.
-- **Unit Tests**: Added comprehensive unit tests for executor and discovery packages.
-- **Runner Interface**: Refactored system.Runner to interface for better testability.
-
-## Mission
-
-ClawRemove exists to be the cleanest and most trustworthy AI agent removal engine on macOS, Linux, and Windows.
-
-The product goal is narrow by design:
-
-- discover product-owned artifacts with strong evidence
-- generate an auditable removal plan
-- execute only approved actions
-- verify what still remains after removal
-
-ClawRemove is not a generic "PC cleaner", not a system tuner, and not a resident management agent.
-
-It should behave like a controlled uninstall tool:
-
-- smart enough to reason about AI agent footprints
-- strict enough to avoid unbounded system changes
-- quiet enough to leave no new mess behind
-
-## Supported AI Agents
-
-ClawRemove currently supports removal of:
-
-| Provider | State Dir | Config | Env Prefix | Default Port | Package Manager |
-|----------|-----------|--------|------------|--------------|-----------------|
-| OpenClaw | ~/.openclaw | openclaw.json | OPENCLAW_ | 18789 | npm, brew |
-| NanoBot | ~/.nanobot | config.json | NANOBOT_ | 18790 | pip, pipx |
-| PicoClaw | ~/.picoclaw | config.json | PICOCLAW_ | 18790 | binary |
-| OpenFang | ~/.openfang | openfang.json | OPENFANG_ | 18791 | npm |
-| ZeroClaw | ~/.zeroclaw | zeroclaw.json | ZEROCLAW_ | 18792 | npm |
-| NanoClaw | ~/.nanoclaw | nanoclaw.json | NANOCLAW_ | 18793 | npm, pip |
-
-## Future Expansion
-
-ClawRemove is designed to be extensible. Future providers may include:
-
-### AI Agent Frameworks
-- LangGraph agents
-- CrewAI
-- AutoGen
-- GPT Researcher
-- AgentGPT
-
-### Local LLM Tools
-- Ollama
-- LM Studio
-- GPT4All
-- LocalAI
-
-### Development Tools
-- Cursor
-- Windsurf
-- Continue.dev
-- Aider
-- Cline
-
-The architecture allows adding new providers without modifying core engine code.
-
-## Product Direction
-
-ClawRemove should feel predictable, surgical, and quiet:
-
-- no hidden state database by default
-- no background service
-- no telemetry by default
-- no broad wildcard deletion
-- no destructive action without explicit reasoning
-- no LLM authority over destructive execution
-
-The long-term direction is a reusable removal engine with pluggable product providers for AI agents.
-
-## Non-Negotiable Engineering Standards
-
-- Evidence before deletion. Every destructive action must have traceable evidence.
-- Plan before apply. Users and agents must be able to audit intended changes before execution.
-- High-risk actions require explicit opt-in.
-- Idempotent execution. Re-running the same plan should not cause new damage.
-- Provider isolation. Product-specific rules must stay inside provider packages.
-- Platform isolation. macOS, Linux, and Windows behavior must not leak into generic engine code.
-- Human-readable and machine-readable output must remain stable.
-- Any future LLM integration must stay advisory unless deterministic evidence promotes an action into the executable plan.
-
-## Architectural Target
-
-```text
-cmd/claw-remove
-internal/app
-internal/core
-internal/discovery
-internal/evidence
-internal/plan
-internal/executor
-internal/output
-internal/platform
-internal/products/openclaw
-internal/products/nanobot
-internal/products/picoclaw
-internal/products/<future-provider>
-internal/skills
-internal/tools
-docs
-scripts
+Embedding Cache:
+  Sentence Transformers: 3GB
 ```
 
-### Core responsibilities
+Detection paths:
+- ~/.ollama/models
+- ~/.cache/huggingface
+- ~/.chromadb
+- ~/.local/share/milvus
 
-- `app`: command model and CLI flags
-- `core`: orchestration for audit, plan, apply, and verify
-- `discovery`: provider-aware evidence collection
-- `plan`: safe action generation with risk grading
-- `executor`: execution of file, command, and service actions
-- `output`: text and JSON reporting
-- `platform`: platform-native adapters and system integrations
-- `products/*`: provider facts, aliases, heuristics, and verification logic
-- `skills`: provider-declared high-level analysis capabilities
-- `tools`: controlled read-only tool catalog used by advisors
+### 4. Agent Cleanup
 
-## Current State
+Deep clean agent environments.
 
-Implemented today:
+```bash
+clawremove cleanup --product openclaw
+```
 
-- provider registry with multi-provider support
-- `openclaw`, `nanobot`, `picoclaw` providers
-- audit, plan, apply, verify, explain commands
-- JSON and human-readable output
-- multi-platform build scripts
-- baseline CI
-- multilingual README set
-- controlled advisor scaffold and `explain` command
-- multi-provider LLM client for OpenAI, Anthropic, and OpenAI-compatible APIs
-- residual verification classifier with confirmed versus investigate buckets
-- provider capability model with provider-specific skills and tools
-- explicit `internal/evidence` layer and partial LLM split into prompts/providers/reactor
-- platform adapters (darwin/linux/windows) wired into controlled probes, discovery, and planning paths
-- explicit architecture assessment in `docs/ARCHITECTURE.md`
-- multi-driver LLM configuration and fallback-chain capability
-- version metadata injected into binaries
-- generated checksums and release archives
-- Windows registry detection and cleanup
-- Environment variable detection
-- Hosts file entry detection
-- Enhanced service discovery (launchd, systemd, scheduled tasks)
-- Comprehensive unit tests for executor and discovery
+Removes:
+- Configuration files
+- Cache directories
+- Background services
+- Shell integrations
+- Model artifacts (optional)
 
-## Delivery Phases
+### 5. Agent Security Audit
 
-### Phase 1: Release-Ready CLI ✅
+Check for exposed API keys in agent configs.
 
-Goal: ship a reliable CLI that can be used in real environments for AI agent removal.
+```bash
+clawremove security
+```
 
-Status: Complete
+Output:
+```
+Security Audit
+--------------
+⚠️  API keys detected in 3 locations:
 
-### Phase 2: Engine Hardening ✅
+  ~/.openclaw/.env
+    - OPENAI_API_KEY
 
-Goal: make the core engine robust enough for multiple providers.
+  ~/.cursor/config.json
+    - ANTHROPIC_API_KEY
 
-Status: Complete
+  Environment variable
+    - GEMINI_API_KEY
 
-### Phase 3: Controlled AI Advisor ✅
+Recommendation: Move keys to secure secret manager
+```
 
-Goal: add ReAct-style assistance without turning ClawRemove into an unsafe autonomous agent.
+Scope: ONLY AI tool configurations, not general file scanning.
 
-Status: Complete
+### 6. Agent Machine Hygiene
 
-### Phase 4: Multi-Provider Expansion 🔄
+Analyze AI storage usage.
 
-Goal: support additional AI agent products without compromising safety.
+```bash
+clawremove hygiene
+```
 
-Work items:
+Output:
+```
+AI Storage Usage
+----------------
+Models:      86GB
+Cache:       21GB
+Vector DB:   12GB
+Logs:        2GB
+────────────────
+Total:       121GB
 
-- [x] OpenClaw provider
-- [x] NanoBot provider
-- [x] PicoClaw provider
-- [ ] AutoGPT provider
-- [ ] LangGraph agents provider
-- [ ] Ollama agents provider
-- [x] Provider fixtures and conformance tests
-- [x] Provider-specific verification rules
+Recommendations:
+- 3 old model versions can be cleaned (save 24GB)
+- Unused embedding cache: 8GB
+```
 
-### Phase 5: Desktop Controller Readiness
+## CLI Commands
 
-Goal: prepare the engine for a future GUI or upper-computer controller.
+```bash
+# Full environment audit
+clawremove audit
 
-Work items:
+# Quick detection
+clawremove detect
 
-- [ ] stabilize internal request and response models
-- [x] preserve clean separation between engine and CLI rendering
-- [ ] ensure every action can be surfaced in UI with reason and risk
-- [x] document machine-consumable output contracts
+# Deep cleanup
+clawremove cleanup --product openclaw
 
-## Immediate Backlog
+# Security check
+clawremove security
 
-Priority order for the next development iterations:
+# Storage analysis
+clawremove hygiene
+```
 
-1. Add AutoGPT provider
-2. Add LangGraph agents provider
-3. Add Ollama agents provider
-4. Improve Windows registry cleanup coverage
-5. Add GUI/daemon removal detection
+## Similar Tools
 
-## Rules For Agents
+ClawRemove is similar to:
 
-Agents working on ClawRemove should preserve these constraints:
+- `brew doctor` - Environment health check
+- `docker system df` - Storage analysis
+- `npm doctor` - Node environment check
 
-- do not add a background process
-- do not add telemetry by default
-- do not add persistent caches unless explicitly justified
-- do not broaden deletion to fuzzy filesystem scans
-- do not let product-specific rules leak into generic engine packages
-- do not mark heuristic findings as auto-removable without review
-- do not let an LLM directly own destructive execution
+NOT similar to:
 
-When in doubt, prefer reporting over deletion.
+- CCleaner (system cleaner)
+- Nessus (security scanner)
+- Malwarebytes (malware removal)
 
-## Definition of Done
+## Implementation Phases
 
-A feature is done only when all of the following are true:
+### Phase 1: Detection Infrastructure ✅
 
-- behavior is documented
-- risk is explicit
-- output is stable
-- tests or validation steps were run
-- the change does not weaken evidence standards
-- the change does not make the tool noisier or more invasive
+- [x] Agent runtime detection (Ollama, LM Studio, GPT4All, LocalAI)
+- [x] Agent framework detection (langchain, openai sdk, transformers)
+- [x] Model cache detection (HuggingFace, Torch, TensorFlow)
+- [x] Vector store detection (ChromaDB, Pinecone, Weaviate)
+- [x] AI tool security scanner (API keys in configs)
 
-## Documentation Contract
+### Phase 2: CLI Integration
 
-`README.md` explains what ClawRemove is and how to use it.
+- [ ] Add `audit` command with full environment report
+- [ ] Add `detect` command for quick scan
+- [ ] Add `security` command for API key audit
+- [ ] Add `hygiene` command for storage analysis
+- [ ] Update output formatting
 
-`docs/PLAN.md` explains where the project is going and how agents should continue development safely.
+### Phase 3: Provider Expansion
 
-`docs/ARCHITECTURE.md` explains how the system is structured today, what is still too coupled, and what the target architecture should become.
+- [ ] Cursor provider
+- [ ] Windsurf provider
+- [ ] Aider provider
+- [ ] Cline provider
+- [ ] Continue.dev provider
 
-This file should stay current whenever major architecture or roadmap decisions change.
+### Phase 4: Advanced Detection
 
-When code structure, provider capabilities, or advisor behavior changes, `README.md`, `docs/PLAN.md`, and `docs/ARCHITECTURE.md` must be updated in the same change.
+- [ ] vLLM detection
+- [ ] llama.cpp detection
+- [ ] LangGraph detection
+- [ ] AutoGen detection
+- [ ] CrewAI detection
+
+### Phase 5: Cleanup Enhancement
+
+- [ ] Model version cleanup
+- [ ] Orphaned cache cleanup
+- [ ] Unused vector db cleanup
+- [ ] Log rotation
+
+## Supported Agents
+
+| Agent | Type | State Directory |
+|-------|------|-----------------|
+| OpenClaw | Application | ~/.openclaw |
+| NanoBot | Application | ~/.nanobot |
+| PicoClaw | Application | ~/.picoclaw |
+| OpenFang | Application | ~/.openfang |
+| ZeroClaw | Application | ~/.zeroclaw |
+| NanoClaw | Application | ~/.nanoclaw |
+| Cursor | IDE | ~/.cursor |
+| Windsurf | IDE | ~/.windsurf |
+| Aider | CLI | ~/.aider |
+| Cline | Extension | ~/.cline |
+
+## Supported Runtimes
+
+| Runtime | Detection | Model Path |
+|---------|-----------|------------|
+| Ollama | binary + service | ~/.ollama/models |
+| LM Studio | directory | ~/.lmstudio/models |
+| GPT4All | directory | ~/.cache/gpt4all |
+| LocalAI | binary | ~/.localai/models |
+
+## Important Boundaries
+
+### Always Remember
+
+1. **Focus on Agent Environment** - Not general system
+2. **Best Effort Detection** - Not exhaustive scanning
+3. **Safe Cleanup** - Always backup before delete
+4. **Clear Scope** - AI tools only, not enterprise data
+
+### Never Do
+
+1. Don't become a system cleaner
+2. Don't become a security scanner
+3. Don't scan arbitrary files
+4. Don't modify non-AI configurations
+
+## Why This Matters
+
+AI Agents are becoming "local infrastructure" like Docker, Node, Python.
+
+But there's no tool to audit AI agent environments.
+
+ClawRemove fills this gap:
+
+- ✔ Direction is reasonable
+- ✔ Technically achievable
+- ✔ Won't over-bloat
+- ✔ Clear value proposition
