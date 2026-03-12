@@ -6,7 +6,7 @@
     <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
     <img src="https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go" alt="Go 1.25+">
-    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827" alt="Platform support">
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows%20%7C%20FreeBSD%20%7C%20NetBSD%20%7C%20OpenBSD-111827" alt="Platform support">
     <a href="https://github.com/tianrking/ClawRemove/releases"><img src="https://img.shields.io/github/v/release/tianrking/ClawRemove" alt="Latest release"></a>
   </p>
   <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
@@ -202,46 +202,77 @@ Shared flags:
 - `--remove-docker`
   Opt in to removing matching Docker or Podman containers and images.
 
-## AI Analysis Enhancement
+## AI Analysis (Optional)
 
-ClawRemove includes an AI-powered analysis layer for enhanced environment inspection.
+ClawRemove can use AI to explain findings in plain language. This is **optional** - all core features work without AI.
 
-### Key Principle: Advisory Only
+### What AI Does
 
-The LLM layer is **advisory only** - it can explain findings and suggest actions, but:
-- ✅ Can explain what was discovered
-- ✅ Can suggest what to review
-- ✅ Can help classify uncertain items
-- ❌ Cannot directly execute destructive commands
-- ❌ Cannot bypass the deterministic engine
+- Explains what was discovered in simple terms
+- Suggests what to review or clean
+- Helps classify uncertain items
 
-This makes ClawRemove smart like an agent, but safe like a proper system tool.
+### What AI Cannot Do
 
-### Supported LLM Providers
+- ❌ Cannot execute destructive commands
+- ❌ Cannot bypass safety checks
+- ❌ Cannot modify your system
 
-- `openai`
-- `anthropic`
-- `openrouter`
-- `zhipu`
-- `openai-compatible`
+### Quick Setup
 
-### Configuration
+**Option 1: OpenAI**
+```bash
+# Set your API key
+export OPENAI_API_KEY="sk-your-key-here"
 
-Environment variables:
+# Use AI analysis
+claw-remove explain --product openclaw --ai
+```
 
-- `CLAWREMOVE_LLM_PROVIDERS` - Comma-separated provider chain
-- `CLAWREMOVE_LLM_API_KEY` - Generic API key override
-- `OPENAI_API_KEY` - OpenAI API key
-- `ANTHROPIC_API_KEY` - Anthropic API key
+**Option 2: Anthropic Claude**
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY="sk-ant-your-key-here"
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
 
-### Usage
+# Use AI analysis
+claw-remove explain --product openclaw --ai
+```
+
+**Option 3: OpenAI-Compatible (any provider)**
+```bash
+# Configure your provider
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://your-provider.com/v1"
+export CLAWREMOVE_LLM_API_KEY="your-key"
+
+# Use AI analysis
+claw-remove explain --product openclaw --ai
+```
+
+### All LLM Configuration Options
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CLAWREMOVE_LLM_PROVIDER` | Provider type | `openai`, `anthropic`, `openai-compatible` |
+| `CLAWREMOVE_LLM_API_KEY` | API key (generic) | `sk-xxx` |
+| `OPENAI_API_KEY` | OpenAI key (fallback) | `sk-xxx` |
+| `ANTHROPIC_API_KEY` | Anthropic key (fallback) | `sk-ant-xxx` |
+| `CLAWREMOVE_LLM_BASE_URL` | Custom API URL | `https://api.example.com/v1` |
+| `CLAWREMOVE_LLM_MODEL` | Model override | `gpt-4`, `claude-3-sonnet` |
+| `CLAWREMOVE_LLM_TIMEOUT_SECONDS` | Request timeout | `60` |
+
+### Commands with AI
 
 ```bash
-# Enhanced audit with AI analysis
-clawremove audit --ai
+# Audit with AI explanation
+claw-remove audit --product openclaw --ai
 
-# Explain findings with AI assistance
-clawremove explain --ai
+# Get AI analysis of findings
+claw-remove explain --product openclaw --ai
+
+# JSON output with AI
+claw-remove explain --product openclaw --ai --json
 ```
 
 ## Safe Removal Workflow
@@ -325,14 +356,29 @@ Windows PowerShell:
 ./scripts/build.ps1
 ```
 
-Current release targets:
+Current release targets (14 platforms):
 
-- `dist/claw-remove-darwin-amd64`
-- `dist/claw-remove-darwin-arm64`
-- `dist/claw-remove-linux-amd64`
-- `dist/claw-remove-linux-arm64`
-- `dist/claw-remove-windows-amd64.exe`
-- `dist/claw-remove-windows-arm64.exe`
+**macOS:**
+- `claw-remove-darwin-amd64` (Intel)
+- `claw-remove-darwin-arm64` (Apple Silicon)
+
+**Linux:**
+- `claw-remove-linux-amd64` (x86_64)
+- `claw-remove-linux-arm64` (ARM64)
+- `claw-remove-linux-386` (32-bit)
+- `claw-remove-linux-arm` (ARM v7, Raspberry Pi)
+- `claw-remove-linux-riscv64` (RISC-V)
+
+**Windows:**
+- `claw-remove-windows-amd64.exe` (x86_64)
+- `claw-remove-windows-arm64.exe` (ARM64)
+- `claw-remove-windows-386.exe` (32-bit)
+
+**BSD:**
+- `claw-remove-freebsd-amd64`
+- `claw-remove-freebsd-arm64`
+- `claw-remove-netbsd-amd64`
+- `claw-remove-openbsd-amd64`
 
 ## Example Workflow
 

@@ -62,37 +62,77 @@ ClawRemove 目前处于持续建设阶段。
 - 输出既适合人看，也适合自动化系统消费
 - 项目结构适合持续用 agent 演进
 
-## AI 分析增强
+## AI 分析（可选）
 
-ClawRemove 内置 AI 分析层，用于增强环境检测报告。
+ClawRemove 可以使用 AI 来解释发现结果。这是**可选功能** - 所有核心功能无需 AI 也能工作。
 
-### 核心原则：仅提供建议
+### AI 能做什么
 
-LLM 层**仅用于分析和建议**，不直接执行操作：
-- ✅ 可以解释发现了什么
-- ✅ 可以建议需要关注的内容
-- ✅ 可以帮助分类不确定项
-- ❌ 不能直接执行破坏性命令
-- ❌ 不能绕过确定性引擎
+- 用简单语言解释发现了什么
+- 建议需要关注或清理的内容
+- 帮助分类不确定的项目
 
-这样 ClawRemove 可以像 agent 一样智能，但像系统工具一样安全。
+### AI 不能做什么
 
-### 已实现的能力
+- ❌ 不能执行破坏性命令
+- ❌ 不能绕过安全检查
+- ❌ 不能修改你的系统
 
-- 支持多种 LLM provider（OpenAI、Anthropic、OpenRouter、Zhipu 等）
-- 具备受控 ReAct 循环
-- 具备只读工具协议与受控探测
-- 具备 provider-specific skills 与 tools 元数据
-- 模型无法直接取得破坏性执行权
+### 快速配置
 
-### 使用方法
+**方式一：OpenAI**
+```bash
+# 设置 API Key
+export OPENAI_API_KEY="sk-你的密钥"
+
+# 使用 AI 分析
+claw-remove explain --product openclaw --ai
+```
+
+**方式二：Anthropic Claude**
+```bash
+# 设置 API Key
+export ANTHROPIC_API_KEY="sk-ant-你的密钥"
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
+
+# 使用 AI 分析
+claw-remove explain --product openclaw --ai
+```
+
+**方式三：OpenAI 兼容接口（任意提供商）**
+```bash
+# 配置你的提供商
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://你的提供商.com/v1"
+export CLAWREMOVE_LLM_API_KEY="你的密钥"
+
+# 使用 AI 分析
+claw-remove explain --product openclaw --ai
+```
+
+### 所有 LLM 配置选项
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `CLAWREMOVE_LLM_PROVIDER` | 提供商类型 | `openai`, `anthropic`, `openai-compatible` |
+| `CLAWREMOVE_LLM_API_KEY` | API 密钥（通用） | `sk-xxx` |
+| `OPENAI_API_KEY` | OpenAI 密钥 | `sk-xxx` |
+| `ANTHROPIC_API_KEY` | Anthropic 密钥 | `sk-ant-xxx` |
+| `CLAWREMOVE_LLM_BASE_URL` | 自定义 API 地址 | `https://api.example.com/v1` |
+| `CLAWREMOVE_LLM_MODEL` | 模型覆盖 | `gpt-4`, `claude-3-sonnet` |
+| `CLAWREMOVE_LLM_TIMEOUT_SECONDS` | 请求超时 | `60` |
+
+### 带 AI 的命令
 
 ```bash
-# 增强审计报告
-clawremove audit --ai
+# 审计并获取 AI 解释
+claw-remove audit --product openclaw --ai
 
-# AI 辅助解释发现结果
-clawremove explain --ai
+# 获取 AI 分析报告
+claw-remove explain --product openclaw --ai
+
+# JSON 输出
+claw-remove explain --product openclaw --ai --json
 ```
 
 ## 命令

@@ -8,12 +8,26 @@ mkdir -p "${DIST_DIR}"
 VERSION="${CLAWREMOVE_VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo "dev")}"
 
 targets=(
+  # macOS
   "darwin amd64"
   "darwin arm64"
+  # Linux
   "linux amd64"
   "linux arm64"
+  "linux 386"
+  "linux arm"      # ARM v7 (Raspberry Pi)
+  "linux riscv64"  # RISC-V
+  # Windows
   "windows amd64"
   "windows arm64"
+  "windows 386"
+  # FreeBSD
+  "freebsd amd64"
+  "freebsd arm64"
+  # NetBSD
+  "netbsd amd64"
+  # OpenBSD
+  "openbsd amd64"
 )
 
 # Clear existing checksums
