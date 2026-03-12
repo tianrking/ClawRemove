@@ -58,6 +58,9 @@ clawremove cleanup --product openclaw
 | OpenFang | AI agent framework | ~/.openfang |
 | ZeroClaw | Lightweight AI agent | ~/.zeroclaw |
 | NanoClaw | Mini AI agent | ~/.nanoclaw |
+| Cursor | AI-powered IDE | ~/.cursor |
+| Windsurf | Codeium AI IDE | ~/.windsurf |
+| Aider | AI pair programming CLI | ~/.aider |
 
 ## Scope
 

@@ -27,8 +27,16 @@ Su objetivo es muy claro: descubrir residuos reales de OpenClaw y otros agentes 
 Proveedor incluido actualmente:
 
 - `openclaw`
+- `nanobot`
+- `picoclaw`
+- `openfang`
+- `zeroclaw`
+- `nanoclaw`
+- `cursor`
+- `windsurf`
+- `aider`
 
-La arquitectura ya está preparada para más productos de la familia claw en el futuro, pero por ahora el enfoque está en OpenClaw.
+La arquitectura ya está preparada para más productos de la familia claw en el futuro.
 
 ## Estado del proyecto
 

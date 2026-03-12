@@ -32,6 +32,9 @@ ClawRemove 是一个使用 Go 编写的专业跨平台 AI Agent 卸载引擎。
 | OpenFang | AI Agent 框架 | ~/.openfang |
 | ZeroClaw | 轻量级 AI Agent | ~/.zeroclaw |
 | NanoClaw | 小型 AI Agent | ~/.nanoclaw |
+| Cursor | AI 驱动 IDE | ~/.cursor |
+| Windsurf | Codeium AI IDE | ~/.windsurf |
+| Aider | AI 结对编程 CLI | ~/.aider |
 
 ## 当前状态
 

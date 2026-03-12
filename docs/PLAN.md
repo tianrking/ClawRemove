@@ -251,19 +251,19 @@ NOT similar to:
 - [x] Vector store detection (ChromaDB, Pinecone, Weaviate)
 - [x] AI tool security scanner (API keys in configs)
 
-### Phase 2: CLI Integration
+### Phase 2: CLI Integration ✅
 
-- [ ] Add `audit` command with full environment report
-- [ ] Add `detect` command for quick scan
-- [ ] Add `security` command for API key audit
-- [ ] Add `hygiene` command for storage analysis
-- [ ] Update output formatting
+- [x] Add `environment` command with full environment report
+- [x] Add `inventory` command for AI runtime/agent scan
+- [x] Add `security` command for API key audit
+- [x] Add `hygiene` command for storage analysis
+- [x] Update output formatting with JSON support
 
 ### Phase 3: Provider Expansion
 
-- [ ] Cursor provider
-- [ ] Windsurf provider
-- [ ] Aider provider
+- [x] Cursor provider
+- [x] Windsurf provider
+- [x] Aider provider
 - [ ] Cline provider
 - [ ] Continue.dev provider
 
