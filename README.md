@@ -57,7 +57,7 @@ ClawRemove is in active build-out.
 
 The current release target is a production-grade OpenClaw removal CLI built on top of a provider-based engine that can later support additional claw-family products without rewriting the core.
 
-Each product provider is now expected to describe not only facts, but also provider-specific skills and tools for controlled analysis and future expansion.
+Each product provider is now expected to provide facts as well as runtime tool and skill contracts for controlled analysis and future expansion.
 
 Release scripts now inject version metadata into binaries and produce per-platform archives with SHA256 checksums.
 

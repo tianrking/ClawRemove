@@ -110,13 +110,12 @@ Implemented today:
 - version metadata injected into binaries
 - generated checksums and release archives
 - expanded OpenClaw legacy aliases and app paths
+- transitioned `internal/skills` and `internal/tools` into runtime executable contracts
 
 Still missing or incomplete:
 
 - deeper platform-specific service discovery edge cases and test coverage
 - stable contributor workflow for adding new providers
-- a richer provider skill and tool authoring workflow
-- richer provider/runtime tool contracts for `skills` and `tools`
 
 ## Delivery Phases
 
@@ -221,9 +220,8 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Turn `internal/skills` and `internal/tools` into runtime contracts.
-2. Add GitHub release automation.
-3. Add deeper platform adapter tests for service/process/listener edge cases.
+1. Add GitHub release automation.
+2. Add deeper platform adapter tests for service/process/listener edge cases.
 
 ## Rules For Agents
 

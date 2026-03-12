@@ -54,7 +54,7 @@ func TestControlledAdvisorRunsReadOnlyToolLoop(t *testing.T) {
 		},
 	}
 
-	advice := advisor.Assess(context.Background(), report)
+	advice := advisor.Assess(context.Background(), report, nil)
 	if advice.Mode != "react-controlled" {
 		t.Fatalf("expected react-controlled mode, got %q", advice.Mode)
 	}
@@ -67,21 +67,21 @@ func TestControlledAdvisorRunsReadOnlyToolLoop(t *testing.T) {
 }
 
 func TestExecuteToolRejectsUnsupportedTool(t *testing.T) {
-	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}))
-	_, err := mediator.ExecuteTool(model.Report{}, "destroy_system", map[string]any{})
+	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}), nil)
+	_, err := mediator.ExecuteTool(context.Background(), model.Report{}, "destroy_system", map[string]any{})
 	if err == nil {
 		t.Fatal("expected unsupported tool error")
 	}
 }
 
 func TestPathProbeRejectsUnknownTarget(t *testing.T) {
-	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}))
+	mediator := mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}), nil)
 	report := model.Report{
 		Discovery: model.Discovery{
 			StateDirs: []string{"/tmp/.openclaw"},
 		},
 	}
-	_, err := mediator.ExecuteTool(report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
+	_, err := mediator.ExecuteTool(context.Background(), report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
 	if err == nil {
 		t.Fatal("expected path probe to reject unknown target")
 	}
@@ -98,10 +98,10 @@ func TestControlledAdvisorIncludesTraceWhenEnabled(t *testing.T) {
 	advisor := controlledAdvisor{
 		client:   client,
 		config:   Config{Enabled: true, MaxSteps: 1, Trace: true},
-		mediator: mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"})),
+		mediator: mediation.New(system.NewRunner(), platform.NewAdapter(platform.Host{OS: "darwin"}), nil),
 	}
 
-	advice := advisor.Assess(context.Background(), model.Report{Product: "openclaw"})
+	advice := advisor.Assess(context.Background(), model.Report{Product: "openclaw"}, nil)
 	if len(advice.Trace) == 0 {
 		t.Fatal("expected trace output when trace is enabled")
 	}

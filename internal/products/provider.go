@@ -5,6 +5,8 @@ import (
 
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/products/openclaw"
+	"github.com/tianrking/ClawRemove/internal/tools"
+	"github.com/tianrking/ClawRemove/internal/skills"
 )
 
 type Provider interface {
@@ -12,6 +14,8 @@ type Provider interface {
 	DisplayName() string
 	Facts() model.ProductFacts
 	Capabilities() model.ProviderCapabilities
+	Tools() []tools.Tool
+	Skills() []skills.Skill
 }
 
 func Registry() []Provider {

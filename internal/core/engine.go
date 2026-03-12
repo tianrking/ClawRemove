@@ -77,7 +77,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 			Verify:       verification,
 			Plan:         executionPlan,
 			Results:      results,
-		})
+		}, provider.Skills())
 		advice = &assessed
 	}
 

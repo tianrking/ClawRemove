@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/skills"
 )
 
 type Advisor interface {
-	Assess(context.Context, model.Report) model.Advice
+	Assess(context.Context, model.Report, []skills.Skill) model.Advice
 }
 
 type NoopAdvisor struct{}
@@ -17,7 +18,7 @@ func NewNoopAdvisor() NoopAdvisor {
 	return NoopAdvisor{}
 }
 
-func (NoopAdvisor) Assess(_ context.Context, report model.Report) model.Advice {
+func (NoopAdvisor) Assess(_ context.Context, report model.Report, _ []skills.Skill) model.Advice {
 	advice := model.Advice{
 		Mode:            "controlled",
 		Authority:       "advisory-only",

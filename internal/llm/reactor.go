@@ -11,7 +11,9 @@ import (
 	llmproviders "github.com/tianrking/ClawRemove/internal/llm/providers"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/platform"
+	"github.com/tianrking/ClawRemove/internal/skills"
 	"github.com/tianrking/ClawRemove/internal/system"
+	"github.com/tianrking/ClawRemove/internal/tools"
 )
 
 type controlledAdvisor struct {
@@ -31,7 +33,7 @@ type reactorStep struct {
 	UserMessage     string                 `json:"userMessage,omitempty"`
 }
 
-func NewAdvisorFromEnv(runner system.Runner, host platform.Host) Advisor {
+func NewAdvisorFromEnv(runner system.Runner, host platform.Host, providerTools []tools.Tool) Advisor {
 	cfg := LoadConfigFromEnv()
 	if !cfg.Enabled {
 		return NewNoopAdvisor()
@@ -44,7 +46,7 @@ func NewAdvisorFromEnv(runner system.Runner, host platform.Host) Advisor {
 			UserAgent:      cfg.UserAgent,
 		}),
 		config:   cfg,
-		mediator: mediation.New(runner, platform.NewAdapter(host)),
+		mediator: mediation.New(runner, platform.NewAdapter(host), providerTools),
 	}
 }
 
@@ -61,8 +63,8 @@ func toProviderDrivers(drivers []Driver) []llmproviders.DriverConfig {
 	return out
 }
 
-func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) model.Advice {
-	base := NewNoopAdvisor().Assess(ctx, report)
+func (a controlledAdvisor) Assess(ctx context.Context, report model.Report, skills []skills.Skill) model.Advice {
+	base := NewNoopAdvisor().Assess(ctx, report, skills)
 	base.Mode = "react-controlled"
 	base.UserMessage = "Controlled advisor is enabled. Review its recommendations as guidance, not as execution authority."
 
@@ -107,7 +109,7 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report) mode
 
 		switch strings.ToLower(next.Kind) {
 		case "tool":
-			toolResult, toolErr := a.mediator.ExecuteTool(report, next.Tool, next.Input)
+			toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, next.Tool, next.Input)
 			if toolErr != nil {
 				base.RiskNotes = append(base.RiskNotes, "LLM requested invalid tool input; deterministic fallback was used.")
 				return base

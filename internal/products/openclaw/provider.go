@@ -1,6 +1,12 @@
 package openclaw
 
-import "github.com/tianrking/ClawRemove/internal/model"
+import (
+	"context"
+
+	"github.com/tianrking/ClawRemove/internal/model"
+	"github.com/tianrking/ClawRemove/internal/skills"
+	"github.com/tianrking/ClawRemove/internal/tools"
+)
 
 type Provider struct{}
 
@@ -90,44 +96,109 @@ func (Provider) Facts() model.ProductFacts {
 	}
 }
 
-func (Provider) Capabilities() model.ProviderCapabilities {
-	return model.ProviderCapabilities{
-		Skills: []model.ProviderSkill{
-			{
-				ID:          "openclaw-residue-analysis",
-				Name:        "OpenClaw Residue Analysis",
-				Description: "Analyze OpenClaw residue using provider-specific state paths, package names, service markers, and legacy aliases.",
-				Inputs:      []string{"discovery", "verification"},
-			},
-			{
-				ID:          "openclaw-safe-removal-review",
-				Name:        "OpenClaw Safe Removal Review",
-				Description: "Review confirmed residue, high-risk actions, and investigate-only findings before apply.",
-				Inputs:      []string{"verification", "plan", "advice"},
-			},
-		},
-		Tools: []model.ProviderTool{
-			{
-				ID:          "openclaw-state-probe",
-				Name:        "OpenClaw State Probe",
-				Description: "Read-only inspection of discovered state, workspace, temp, app, and CLI paths.",
-				ReadOnly:    true,
-				Targets:     []string{"state_dirs", "workspace_dirs", "path_probe"},
-			},
-			{
-				ID:          "openclaw-runtime-probe",
-				Name:        "OpenClaw Runtime Probe",
-				Description: "Read-only inspection of discovered packages, services, listeners, and processes.",
-				ReadOnly:    true,
-				Targets:     []string{"services", "service_probe", "packages", "package_probe", "processes", "process_probe", "verification"},
-			},
-			{
-				ID:          "openclaw-shell-probe",
-				Name:        "OpenClaw Shell Probe",
-				Description: "Read-only inspection of shell profile traces and completion residue tied to OpenClaw markers.",
-				ReadOnly:    true,
-				Targets:     []string{"shell_profile_probe"},
-			},
-		},
+func (p Provider) Capabilities() model.ProviderCapabilities {
+	var caps model.ProviderCapabilities
+	for _, skill := range p.Skills() {
+		caps.Skills = append(caps.Skills, skill.Info())
 	}
+	for _, tool := range p.Tools() {
+		caps.Tools = append(caps.Tools, tool.Info())
+	}
+	return caps
+}
+
+func (Provider) Skills() []skills.Skill {
+	return []skills.Skill{
+		residueAnalysisSkill{},
+		safeRemovalReviewSkill{},
+	}
+}
+
+func (Provider) Tools() []tools.Tool {
+	return []tools.Tool{
+		stateProbeTool{},
+		runtimeProbeTool{},
+		shellProbeTool{},
+	}
+}
+
+type residueAnalysisSkill struct{}
+
+func (residueAnalysisSkill) Info() model.ProviderSkill {
+	return model.ProviderSkill{
+		ID:          "openclaw-residue-analysis",
+		Name:        "OpenClaw Residue Analysis",
+		Description: "Analyze OpenClaw residue using provider-specific state paths, package names, service markers, and legacy aliases.",
+		Inputs:      []string{"discovery", "verification"},
+	}
+}
+
+func (residueAnalysisSkill) Analyze(ctx context.Context, report model.Report) (any, error) {
+	// For now, this just acts as a structural contract for the LLM.
+	return nil, nil
+}
+
+type safeRemovalReviewSkill struct{}
+
+func (safeRemovalReviewSkill) Info() model.ProviderSkill {
+	return model.ProviderSkill{
+		ID:          "openclaw-safe-removal-review",
+		Name:        "OpenClaw Safe Removal Review",
+		Description: "Review confirmed residue, high-risk actions, and investigate-only findings before apply.",
+		Inputs:      []string{"verification", "plan", "advice"},
+	}
+}
+
+func (safeRemovalReviewSkill) Analyze(ctx context.Context, report model.Report) (any, error) {
+	return nil, nil
+}
+
+type stateProbeTool struct{}
+
+func (stateProbeTool) Info() model.ProviderTool {
+	return model.ProviderTool{
+		ID:          "openclaw-state-probe",
+		Name:        "OpenClaw State Probe",
+		Description: "Read-only inspection of discovered state, workspace, temp, app, and CLI paths.",
+		ReadOnly:    true,
+		Targets:     []string{"state_dirs", "workspace_dirs", "path_probe"},
+	}
+}
+
+func (stateProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
+	// This delegates execution to mediator fallback for generic probes inside ClawRemove core right now.
+	// Over time, product-specific specific execution could be handled here directly, parsing `input`.
+	return nil, nil // return nil so the generic Mediator can pick it up.
+}
+
+type runtimeProbeTool struct{}
+
+func (runtimeProbeTool) Info() model.ProviderTool {
+	return model.ProviderTool{
+		ID:          "openclaw-runtime-probe",
+		Name:        "OpenClaw Runtime Probe",
+		Description: "Read-only inspection of discovered packages, services, listeners, and processes.",
+		ReadOnly:    true,
+		Targets:     []string{"services", "service_probe", "packages", "package_probe", "processes", "process_probe", "verification"},
+	}
+}
+
+func (runtimeProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
+	return nil, nil
+}
+
+type shellProbeTool struct{}
+
+func (shellProbeTool) Info() model.ProviderTool {
+	return model.ProviderTool{
+		ID:          "openclaw-shell-probe",
+		Name:        "OpenClaw Shell Probe",
+		Description: "Read-only inspection of shell profile traces and completion residue tied to OpenClaw markers.",
+		ReadOnly:    true,
+		Targets:     []string{"shell_profile_probe"},
+	}
+}
+
+func (shellProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
+	return nil, nil
 }

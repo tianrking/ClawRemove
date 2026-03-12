@@ -11,18 +11,24 @@ import (
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/system"
+	"github.com/tianrking/ClawRemove/internal/tools"
 )
 
 type Mediator struct {
-	runner  system.Runner
-	adapter platform.Adapter
+	runner        system.Runner
+	adapter       platform.Adapter
+	providerTools map[string]tools.Tool
 }
 
-func New(runner system.Runner, adapter platform.Adapter) Mediator {
-	return Mediator{runner: runner, adapter: adapter}
+func New(runner system.Runner, adapter platform.Adapter, providerTools []tools.Tool) Mediator {
+	toolMap := make(map[string]tools.Tool, len(providerTools))
+	for _, t := range providerTools {
+		toolMap[t.Info().ID] = t
+	}
+	return Mediator{runner: runner, adapter: adapter, providerTools: toolMap}
 }
 
-func (m Mediator) ExecuteTool(report model.Report, tool string, input map[string]any) (any, error) {
+func (m Mediator) ExecuteTool(ctx context.Context, report model.Report, tool string, input map[string]any) (any, error) {
 	limit := 10
 	if raw, ok := input["limit"]; ok {
 		switch v := raw.(type) {
@@ -34,6 +40,16 @@ func (m Mediator) ExecuteTool(report model.Report, tool string, input map[string
 			if v > 0 {
 				limit = v
 			}
+		}
+	}
+
+	if t, ok := m.providerTools[tool]; ok {
+		res, err := t.Execute(ctx, report, input)
+		if err != nil {
+			return nil, err
+		}
+		if res != nil {
+			return res, nil
 		}
 	}
 
