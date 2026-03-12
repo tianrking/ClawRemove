@@ -59,6 +59,8 @@ The current release target is a production-grade OpenClaw removal CLI built on t
 
 Each product provider is now expected to provide facts as well as runtime tool and skill contracts for controlled analysis and future expansion. For a detailed guide on creating and injecting new providers, see the [Provider Authoring Guide](docs/PROVIDER_AUTHORING.md).
 
+For machine integrators, the engine uses a stable [JSON Output Schema](docs/OUTPUT_SCHEMA.md).
+
 Release scripts now inject version metadata into binaries and produce per-platform archives with SHA256 checksums.
 
 ## Current Provider

@@ -112,11 +112,13 @@ Implemented today:
 - expanded OpenClaw legacy aliases and app paths
 - transitioned `internal/skills` and `internal/tools` into runtime executable contracts
 - deeper platform-specific service discovery edge cases and test coverage map (96.1% coverage)
+- stable contributor workflow for adding new providers (`docs/PROVIDER_AUTHORING.md`)
+- provider conformance test suite (`internal/products/conformance_test.go`)
+- JSON machine-consumable output contract documentation (`docs/OUTPUT_SCHEMA.md`)
 
 Still missing or incomplete:
 
-- stable contributor workflow for adding new providers
-- provider conformance test suite
+- provider-specific verification rules
 
 ## Delivery Phases
 
@@ -221,7 +223,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Document provider authoring workflow (`docs/PROVIDER_AUTHORING.md`) and add provider conformance tests.
+1. Implement provider-specific verification rules to reduce heuristic noise.
 
 ## Rules For Agents
 
