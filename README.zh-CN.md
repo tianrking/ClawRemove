@@ -1,19 +1,19 @@
-<div align="center">
+<div align=”center”>
   <h1>ClawRemove</h1>
-  <p><strong>一个克制、专业、跨平台的 claw 卸载引擎。</strong></p>
+  <p><strong>一个克制、专业、跨平台的 AI Agent 卸载引擎。</strong></p>
   <p>
-    <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
-    <img src="https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go" alt="Go 1.25+">
-    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827" alt="Platform support">
-    <a href="https://github.com/tianrking/ClawRemove/releases"><img src="https://img.shields.io/github/v/release/tianrking/ClawRemove" alt="Latest release"></a>
+    <a href=”https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml”><img src=”https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg” alt=”CI”></a>
+    <a href=”./LICENSE”><img src=”https://img.shields.io/badge/license-MIT-1f6feb” alt=”MIT License”></a>
+    <img src=”https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go” alt=”Go 1.25+”>
+    <img src=”https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827” alt=”Platform support”>
+    <a href=”https://github.com/tianrking/ClawRemove/releases”><img src=”https://img.shields.io/github/v/release/tianrking/ClawRemove” alt=”Latest release”></a>
   </p>
-  <p><a href="./README.md">English</a> | 中文 | <a href="./README.es.md">Español</a></p>
+  <p><a href=”./README.md”>English</a> | 中文 | <a href=”./README.es.md”>Español</a></p>
 </div>
 
-ClawRemove 是一个使用 Go 编写的专业跨平台 claw 卸载引擎。
+ClawRemove 是一个使用 Go 编写的专业跨平台 AI Agent 卸载引擎。
 
-它的目标非常单纯：基于证据发现 OpenClaw 及其他 claw 家族 agent 的残留，生成卸载计划，执行清理，并在最后做残留验证。它不是一个泛用垃圾清理器，也不会为了表现“智能”而到处修改系统。
+它的目标非常单纯：基于证据发现 AI Agent（如 OpenClaw、NanoBot、PicoClaw 等）的残留，生成卸载计划，执行清理，并在最后做残留验证。它不是一个泛用垃圾清理器，也不会为了表现”智能”而到处修改系统。
 
 ## 文档
 
@@ -22,19 +22,22 @@ ClawRemove 是一个使用 Go 编写的专业跨平台 claw 卸载引擎。
 - 开发计划: [docs/PLAN.md](./docs/PLAN.md)
 - 架构说明: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
-## 当前支持
+## 支持的 AI Agent
 
-当前内置 provider：
-
-- `openclaw`
-
-架构已经支持后续增加更多 claw 系列产品，但当前重点仍然是先把 OpenClaw 做到专业和可靠。
+| Agent | 描述 | 状态目录 |
+|-------|------|---------|
+| OpenClaw | AI 助手平台 | ~/.openclaw |
+| NanoBot | Python AI Agent | ~/.nanobot |
+| PicoClaw | Go AI Agent | ~/.picoclaw |
+| OpenFang | AI Agent 框架 | ~/.openfang |
+| ZeroClaw | 轻量级 AI Agent | ~/.zeroclaw |
+| NanoClaw | 小型 AI Agent | ~/.nanoclaw |
 
 ## 当前状态
 
 ClawRemove 目前处于持续建设阶段。
 
-当前主目标是把 OpenClaw 卸载能力打磨到发布级，同时把底层抽象成可扩展的 provider 引擎，为后续 claw 家族扩展和上位机接入打基础。
+当前主目标是把 AI Agent 卸载能力打磨到发布级，同时把底层抽象成可扩展的 provider 引擎，为后续更多 AI Agent 扩展和上位机接入打基础。
 
 现在每个 provider 不只描述事实规则，也可以声明自己的 skills 和只读 tools，用于后续持续增强分析与智能能力。
 
@@ -219,12 +222,15 @@ claw-remove explain --product openclaw --ai --json
 - 临时目录和日志目录
 - 应用 bundle 与应用数据
 - launchd / systemd / scheduled tasks
-- npm / pnpm / bun / Homebrew 安装
+- npm / pnpm / bun / pip / Homebrew 安装
 - shell profile / completion 残留（通过内容扫描验证实际包含 marker，而非仅路径匹配）
 - 匹配进程
 - 监听端口（由 provider 的事实规则声明，不硬编码）
 - crontab 残留
 - Docker / Podman 容器与镜像
+- Windows 注册表键值
+- 环境变量
+- hosts 文件条目
 
 ## 风险分层
 
