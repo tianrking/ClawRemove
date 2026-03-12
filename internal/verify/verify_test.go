@@ -17,7 +17,7 @@ func TestClassifySplitsConfirmedAndInvestigate(t *testing.T) {
 		Summary: model.EvidenceSummary{Exact: 1, Strong: 1, Heuristic: 2},
 	}
 
-	verification := Classify(evidence)
+	verification := Classify(evidence, nil)
 	if !verification.Verified {
 		t.Fatal("expected verification to be marked verified")
 	}

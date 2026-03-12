@@ -2,10 +2,14 @@ package verify
 
 import "github.com/tianrking/ClawRemove/internal/model"
 
-func Classify(evidence model.EvidenceSet) model.Verification {
+type Rule interface {
+	Evaluate(residual *model.Residual)
+}
+
+func Classify(evidence model.EvidenceSet, rules []Rule) model.Verification {
 	var all []model.Residual
 	for _, item := range evidence.Items {
-		all = append(all, model.Residual{
+		residual := model.Residual{
 			Kind:       item.Kind,
 			Target:     item.Target,
 			Evidence:   item.Strength,
@@ -14,24 +18,29 @@ func Classify(evidence model.EvidenceSet) model.Verification {
 			Rule:       item.Rule,
 			Source:     item.Source,
 			Confidence: item.Confidence,
-		})
+		}
+		for _, rule := range rules {
+			rule.Evaluate(&residual)
+		}
+		all = append(all, residual)
 	}
 
 	verification := model.Verification{
 		Verified:  true,
 		Residuals: all,
-		Summary: model.VerificationSummary{
-			Exact:     evidence.Summary.Exact,
-			Strong:    evidence.Summary.Strong,
-			Heuristic: evidence.Summary.Heuristic,
-		},
 	}
+
 	for _, residual := range all {
 		switch residual.Evidence {
-		case "exact", "strong":
+		case "exact":
 			verification.Confirmed = append(verification.Confirmed, residual)
+			verification.Summary.Exact++
+		case "strong":
+			verification.Confirmed = append(verification.Confirmed, residual)
+			verification.Summary.Strong++
 		default:
 			verification.Investigate = append(verification.Investigate, residual)
+			verification.Summary.Heuristic++
 		}
 	}
 	return verification

@@ -115,10 +115,9 @@ Implemented today:
 - stable contributor workflow for adding new providers (`docs/PROVIDER_AUTHORING.md`)
 - provider conformance test suite (`internal/products/conformance_test.go`)
 - JSON machine-consumable output contract documentation (`docs/OUTPUT_SCHEMA.md`)
+- provider-specific verification rules (`internal/verify/verify.go`)
 
 Still missing or incomplete:
-
-- provider-specific verification rules
 
 ## Delivery Phases
 
@@ -223,7 +222,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Implement provider-specific verification rules to reduce heuristic noise.
+1. Preserve clean separation between engine and CLI rendering by consolidating print logic into `internal/output`.
 
 ## Rules For Agents
 

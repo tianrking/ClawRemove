@@ -39,7 +39,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 
 	evidenceSet := evidence.Build(discovered, provider.Facts())
 	executionPlan := plan.Build(discovered, evidenceSet, provider.Facts(), options, e.host)
-	verification := verify.Classify(evidenceSet)
+	verification := verify.Classify(evidenceSet, provider.VerificationRules())
 	var results []model.Result
 	if options.Command == "apply" && !options.AuditOnly {
 		exec := executor.New(e.runner)

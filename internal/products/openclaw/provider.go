@@ -6,6 +6,7 @@ import (
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/skills"
 	"github.com/tianrking/ClawRemove/internal/tools"
+	"github.com/tianrking/ClawRemove/internal/verify"
 )
 
 type Provider struct{}
@@ -114,11 +115,29 @@ func (Provider) Skills() []skills.Skill {
 	}
 }
 
+func (Provider) VerificationRules() []verify.Rule {
+	return []verify.Rule{
+		shellProfileVerificationRule{},
+	}
+}
+
 func (Provider) Tools() []tools.Tool {
 	return []tools.Tool{
 		stateProbeTool{},
 		runtimeProbeTool{},
 		shellProbeTool{},
+	}
+}
+
+type shellProfileVerificationRule struct{}
+
+func (shellProfileVerificationRule) Evaluate(residual *model.Residual) {
+	if residual.Kind == "shell_profile" {
+		// OpenClaw modifies shell profiles distinctly with its own exact CLI paths and variables.
+		// If we matched the profile due to an exact marker (like .openclaw), we can trust it is strong evidence.
+		residual.Evidence = "strong"
+		residual.Rule = "verified-shell-profile"
+		residual.Confidence = 0.85
 	}
 }
 
