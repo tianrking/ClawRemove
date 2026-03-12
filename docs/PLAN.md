@@ -1,0 +1,206 @@
+# ClawRemove Development Plan
+
+## Mission
+
+ClawRemove exists to be the cleanest and most trustworthy claw-family removal engine on macOS, Linux, and Windows.
+
+The product goal is narrow by design:
+
+- discover product-owned artifacts with strong evidence
+- generate an auditable removal plan
+- execute only approved actions
+- verify what still remains after removal
+
+ClawRemove is not a generic "PC cleaner", not a system tuner, and not a resident management agent.
+
+## Product Direction
+
+ClawRemove should feel predictable, surgical, and quiet:
+
+- no hidden state database by default
+- no background service
+- no telemetry by default
+- no broad wildcard deletion
+- no destructive action without explicit reasoning
+
+The long-term direction is a reusable removal engine with pluggable product providers.
+
+The first provider is `openclaw`. Future providers can include other claw-family products, but OpenClaw remains the current quality benchmark.
+
+## Non-Negotiable Engineering Standards
+
+- Evidence before deletion. Every destructive action must have traceable evidence.
+- Plan before apply. Users and agents must be able to audit intended changes before execution.
+- High-risk actions require explicit opt-in.
+- Idempotent execution. Re-running the same plan should not cause new damage.
+- Provider isolation. Product-specific rules must stay inside provider packages.
+- Platform isolation. macOS, Linux, and Windows behavior must not leak into generic engine code.
+- Human-readable and machine-readable output must remain stable.
+
+## Architectural Target
+
+```text
+cmd/claw-remove
+internal/app
+internal/core
+internal/discovery
+internal/plan
+internal/executor
+internal/output
+internal/platform
+internal/products/openclaw
+internal/products/<future-provider>
+docs
+scripts
+```
+
+### Core responsibilities
+
+- `app`: command model and CLI flags
+- `core`: orchestration for audit, plan, apply, and verify
+- `discovery`: provider-aware evidence collection
+- `plan`: safe action generation with risk grading
+- `executor`: execution of file, command, and service actions
+- `output`: text and JSON reporting
+- `platform`: platform-native adapters and system integrations
+- `products/*`: provider facts, aliases, heuristics, and verification logic
+
+## Current State
+
+Implemented today:
+
+- provider registry
+- `openclaw` provider
+- audit, plan, apply, verify commands
+- JSON and human-readable output
+- multi-platform build scripts
+- baseline CI
+- multilingual README set
+
+Still missing or incomplete:
+
+- deeper post-removal verification semantics
+- stronger platform-specific adapters
+- formal release packaging and checksums
+- richer legacy alias coverage for historical claw naming drift
+- stable contributor workflow for adding new providers
+
+## Delivery Phases
+
+### Phase 1: Release-Ready OpenClaw CLI
+
+Goal: ship a reliable CLI that can be used in real environments for OpenClaw removal.
+
+Work items:
+
+- strengthen `verify` so it is not only a second audit pass
+- expand OpenClaw historical naming coverage
+- refine risk labeling for actions
+- add more exact and strong evidence markers
+- improve Windows scheduled-task and service cleanup coverage
+- improve Linux service variants and user/system scope coverage
+- improve macOS launch agent and app residue coverage
+- package version metadata into binaries
+- generate checksums and release archives
+
+Exit criteria:
+
+- cross-platform build artifacts are reproducible
+- all supported commands have stable JSON output
+- README examples match real CLI behavior
+- CI validates tests and build on each push
+
+### Phase 2: Engine Hardening
+
+Goal: make the core engine robust enough for multiple providers.
+
+Work items:
+
+- formalize `ProductProvider` and evidence interfaces
+- add a `platform` adapter layer
+- split exact, strong, and heuristic evidence into explicit types
+- standardize action metadata: reason, evidence, risk, opt-in requirement
+- add regression tests around discovery and planning
+- add snapshot tests for JSON output
+
+Exit criteria:
+
+- provider logic is isolated from engine logic
+- new providers can be added without editing core planning semantics
+- output schema changes are intentional and reviewed
+
+### Phase 3: Multi-Provider Expansion
+
+Goal: support additional claw-family products without compromising safety.
+
+Work items:
+
+- document provider authoring rules
+- add provider fixtures and conformance tests
+- add one additional provider only after OpenClaw quality is strong
+- add provider-specific verification rules
+
+Exit criteria:
+
+- adding a provider is a bounded change
+- provider discovery does not regress existing products
+- heuristics remain report-only unless promoted by strong evidence
+
+### Phase 4: Desktop Controller Readiness
+
+Goal: prepare the engine for a future GUI or upper-computer controller.
+
+Work items:
+
+- stabilize internal request and response models
+- preserve clean separation between engine and CLI rendering
+- ensure every action can be surfaced in UI with reason and risk
+- document machine-consumable output contracts
+
+Exit criteria:
+
+- GUI can call the same engine flows without forking business logic
+- output remains understandable to both humans and automation
+
+## Immediate Backlog
+
+Priority order for the next development iterations:
+
+1. Add version injection and release packaging.
+2. Improve `verify` to classify confirmed leftovers versus report-only findings.
+3. Introduce `internal/platform` adapters.
+4. Expand OpenClaw legacy aliases and service naming coverage.
+5. Add tests for planning edge cases and provider evidence classification.
+6. Add GitHub release workflow with archives and checksums.
+
+## Rules For Agents
+
+Agents working on ClawRemove should preserve these constraints:
+
+- do not add a background process
+- do not add telemetry by default
+- do not add persistent caches unless explicitly justified
+- do not broaden deletion to fuzzy filesystem scans
+- do not let product-specific rules leak into generic engine packages
+- do not mark heuristic findings as auto-removable without review
+
+When in doubt, prefer reporting over deletion.
+
+## Definition of Done
+
+A feature is done only when all of the following are true:
+
+- behavior is documented
+- risk is explicit
+- output is stable
+- tests or validation steps were run
+- the change does not weaken evidence standards
+- the change does not make the tool noisier or more invasive
+
+## Documentation Contract
+
+`README.md` explains what ClawRemove is and how to use it.
+
+`docs/PLAN.md` explains where the project is going and how agents should continue development safely.
+
+This file should stay current whenever major architecture or roadmap decisions change.

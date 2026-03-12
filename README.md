@@ -1,8 +1,19 @@
-# ClawRemove
+<div align="center">
+  <h1>ClawRemove</h1>
+  <p><strong>A surgical, cross-platform claw removal engine.</strong></p>
+  <p>
+    <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
+    <img src="https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go" alt="Go 1.25+">
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827" alt="Platform support">
+    <a href="https://github.com/tianrking/ClawRemove/releases"><img src="https://img.shields.io/github/v/release/tianrking/ClawRemove" alt="Latest release"></a>
+  </p>
+  <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
+</div>
 
 ClawRemove is a professional cross-platform claw uninstaller engine.
 
-Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of supported claw products without behaving like a generic “cleaner” that sprays changes across the system.
+Its purpose is narrow and deliberate: discover, plan, execute, and verify clean removal of supported claw products without behaving like a generic cleaner that sprays changes across the system.
 
 ClawRemove is designed to be:
 
@@ -18,6 +29,7 @@ ClawRemove is designed to be:
 - English: `README.md`
 - 中文: [README.zh-CN.md](./README.zh-CN.md)
 - Español: [README.es.md](./README.es.md)
+- Development plan for agents: [docs/PLAN.md](./docs/PLAN.md)
 
 ## Scope
 
@@ -30,6 +42,12 @@ It focuses on one job:
 3. execute only the approved actions
 4. verify what remains
 
+## Project Status
+
+ClawRemove is in active build-out.
+
+The current release target is a production-grade OpenClaw removal CLI built on top of a provider-based engine that can later support additional claw-family products without rewriting the core.
+
 ## Current Provider
 
 Currently included:
@@ -40,11 +58,19 @@ The engine is already structured for future providers such as other claw-family 
 
 ## Core Principles
 
-- Source-driven discovery: product facts come from actual analyzed install/storage behavior.
+- Source-driven discovery: product facts come from actual analyzed install and storage behavior.
 - Plan before action: destructive changes should be inspectable before execution.
-- High-risk actions are opt-in: killing processes and removing containers/images are never implicit.
+- High-risk actions are opt-in: killing processes and removing containers or images are never implicit.
 - Minimal footprint: no telemetry, no persistent service, no hidden state database.
 - Provider architecture: each supported claw product is a dedicated rule pack.
+
+## Why ClawRemove
+
+- Built for removal, not generic machine cleanup.
+- Default behavior is conservative and reviewable.
+- Evidence matters more than heuristics.
+- JSON output is suitable for automation and future desktop tooling.
+- The repository is structured for continued agent-driven iteration.
 
 ## Commands
 
@@ -68,7 +94,7 @@ claw-remove verify --product openclaw --json
 - `apply`
   Executes the planned actions.
 - `verify`
-  Runs a post-removal audit-style verification pass.
+  Runs a post-removal verification pass.
 
 ## Flags
 
@@ -87,11 +113,11 @@ Shared flags:
 - `--keep-workspace`
   Preserve workspace directories.
 - `--keep-shell`
-  Preserve shell completion/profile integration cleanup.
+  Preserve shell completion and profile integration cleanup.
 - `--kill-processes`
   Opt in to terminating matching live processes.
 - `--remove-docker`
-  Opt in to removing matching Docker/Podman containers and images.
+  Opt in to removing matching Docker or Podman containers and images.
 
 ## What ClawRemove Detects
 
@@ -103,11 +129,11 @@ Depending on platform and provider rules, ClawRemove can discover:
 - app bundles and app data
 - launchd, systemd, and scheduled-task registrations
 - npm, pnpm, bun, and Homebrew installations
-- shell completion/profile traces
+- shell completion and profile traces
 - matching processes
 - listening ports
 - crontab references
-- Docker and Podman containers/images
+- Docker and Podman containers and images
 
 ## Safety Model
 
@@ -116,9 +142,9 @@ ClawRemove intentionally separates actions by risk:
 - Low risk
   Known provider-owned paths such as state, temp, wrapper, and app artifacts.
 - Medium risk
-  Service unload/disable actions and package manager uninstall actions.
+  Service unload or disable actions and package manager uninstall actions.
 - High risk
-  Process termination and container/image removal.
+  Process termination and container or image removal.
 
 High-risk actions require explicit opt-in flags.
 
@@ -137,6 +163,7 @@ internal/output            human and JSON reporting
 internal/products          provider registry
 internal/products/openclaw OpenClaw provider
 internal/system            system command runner
+docs                       roadmap and development plan
 scripts                    build helpers
 dist                       local build artifacts
 ```
@@ -144,7 +171,7 @@ dist                       local build artifacts
 The architecture is built to support:
 
 - more claw-family providers later
-- a future desktop controller or “upper computer” UI
+- a future desktop controller or upper-computer UI
 - stable JSON reporting for automation
 
 ## Build
@@ -209,15 +236,8 @@ Verify residual state:
 claw-remove verify --product openclaw --json
 ```
 
-## Repository Notes
+## Roadmap
 
-This repository is intentionally organized so that the tracked product source lives in `ClawRemove/`.
+The long-term roadmap lives in [docs/PLAN.md](./docs/PLAN.md).
 
-Outer workspace material can be used for:
-
-- provider research
-- agent-driven analysis
-- external references
-- scratch experiments
-
-Those outer artifacts are intentionally excluded from version control.
+That document is written in English on purpose so human contributors and autonomous agents can use the same source of truth for continued development.
