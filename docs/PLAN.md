@@ -111,11 +111,12 @@ Implemented today:
 - generated checksums and release archives
 - expanded OpenClaw legacy aliases and app paths
 - transitioned `internal/skills` and `internal/tools` into runtime executable contracts
+- deeper platform-specific service discovery edge cases and test coverage map (96.1% coverage)
 
 Still missing or incomplete:
 
-- deeper platform-specific service discovery edge cases and test coverage
 - stable contributor workflow for adding new providers
+- provider conformance test suite
 
 ## Delivery Phases
 
@@ -220,7 +221,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Add deeper platform adapter tests for service/process/listener edge cases.
+1. Document provider authoring workflow (`docs/PROVIDER_AUTHORING.md`) and add provider conformance tests.
 
 ## Rules For Agents
 
