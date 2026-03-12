@@ -85,7 +85,7 @@ Implemented today:
 - baseline CI
 - multilingual README set
 - controlled advisor scaffold and `explain` command
-- OpenAI-compatible LLM client with a read-only ReAct tool loop
+- multi-provider LLM client for OpenAI, Anthropic, and OpenAI-compatible APIs
 - residual verification classifier with confirmed versus investigate buckets
 
 Still missing or incomplete:

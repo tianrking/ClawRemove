@@ -95,7 +95,7 @@ This keeps ClawRemove useful like an agent while remaining auditable like a prop
 
 The first implementation of this architecture is now present:
 
-- an OpenAI-compatible LLM client
+- multi-provider LLM support for OpenAI, Anthropic, and other OpenAI-compatible APIs
 - a controlled ReAct loop
 - a read-only tool protocol over in-memory discovery and plan data
 - a hard boundary that prevents the model from issuing destructive commands directly
@@ -108,6 +108,7 @@ claw-remove audit --product openclaw --json
 claw-remove plan --product openclaw --json
 claw-remove apply --product openclaw --dry-run
 claw-remove apply --product openclaw
+claw-remove apply --product openclaw --yes
 claw-remove verify --product openclaw --json
 claw-remove explain --product openclaw --json
 ```
@@ -121,7 +122,7 @@ claw-remove explain --product openclaw --json
 - `plan`
   Produces a deletion plan without applying it.
 - `apply`
-  Executes the planned actions.
+  Executes the planned actions after an interactive safety confirmation.
 - `verify`
   Runs a post-removal verification pass with residual classification.
 - `explain`
@@ -139,6 +140,8 @@ Shared flags:
   Include controlled advisory analysis in the report.
 - `--dry-run`
   Report intended changes without applying them.
+- `--yes`
+  Skip interactive confirmation after you have already reviewed the plan.
 - `--keep-cli`
   Preserve package uninstall actions and CLI wrapper deletion.
 - `--keep-app`
@@ -158,26 +161,70 @@ ClawRemove can attach a controlled advisor to `audit`, `verify`, and `explain`.
 
 The advisor is optional. If no LLM configuration is present, ClawRemove falls back to deterministic advisory output.
 
+Supported providers:
+
+- `openai`
+- `anthropic`
+- `openai-compatible`
+
 Environment variables:
 
-- `CLAWREMOVE_LLM_API_KEY`
-  API key for the configured provider.
-- `CLAWREMOVE_LLM_BASE_URL`
-  OpenAI-compatible base URL. Default: `https://api.openai.com/v1`
-- `CLAWREMOVE_LLM_MODEL`
-  Model name. Default: `gpt-4.1-mini`
 - `CLAWREMOVE_LLM_PROVIDER`
-  Provider label for configuration tracking. Default: `openai-compatible`
+  One of `openai`, `anthropic`, or `openai-compatible`.
+- `CLAWREMOVE_LLM_API_KEY`
+  Generic API key override for the configured provider.
+- `OPENAI_API_KEY`
+  Fallback key when `CLAWREMOVE_LLM_PROVIDER=openai`.
+- `ANTHROPIC_API_KEY`
+  Fallback key when `CLAWREMOVE_LLM_PROVIDER=anthropic`.
+- `CLAWREMOVE_LLM_BASE_URL`
+  Provider base URL override.
+- `CLAWREMOVE_LLM_MODEL`
+  Model name override.
+- `CLAWREMOVE_LLM_MAX_TOKENS`
+  Output token budget for advisory responses.
 - `CLAWREMOVE_LLM_MAX_STEPS`
-  Maximum controlled ReAct steps. Default: `4`
+  Maximum controlled ReAct steps.
 - `CLAWREMOVE_LLM_TIMEOUT_SECONDS`
-  Request timeout. Default: `45`
+  Request timeout in seconds.
 
-Example:
+Defaults:
+
+- `openai`
+  Base URL: `https://api.openai.com/v1`
+  Model: `gpt-4.1-mini`
+- `anthropic`
+  Base URL: `https://api.anthropic.com/v1`
+  Model: `claude-3-5-sonnet-latest`
+- `openai-compatible`
+  Base URL: `https://api.openai.com/v1`
+  Model: `gpt-4.1-mini`
+
+Example with OpenAI:
 
 ```bash
-export CLAWREMOVE_LLM_API_KEY="..."
+export CLAWREMOVE_LLM_PROVIDER="openai"
+export OPENAI_API_KEY="..."
 export CLAWREMOVE_LLM_MODEL="gpt-4.1-mini"
+claw-remove explain --product openclaw --ai --json
+```
+
+Example with Anthropic:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
+export ANTHROPIC_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="claude-3-5-sonnet-latest"
+claw-remove explain --product openclaw --ai --json
+```
+
+Example with another OpenAI-compatible provider:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://your-provider.example/v1"
+export CLAWREMOVE_LLM_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="your-model-name"
 claw-remove explain --product openclaw --ai --json
 ```
 
@@ -218,6 +265,29 @@ Residuals are grouped as:
   Evidence that still needs human review, such as listeners, shell profiles, and some cron or image matches.
 
 This classification is also exposed to the LLM advisor so the model can reason over stronger evidence instead of guessing from raw discovery alone.
+
+## Safe Removal Workflow
+
+ClawRemove is designed to remove as much confirmed residue as possible while still making unsafe operations explicit.
+
+Recommended workflow:
+
+1. `audit`
+   See what ClawRemove found.
+2. `verify`
+   Review confirmed residue versus investigate-only residue.
+3. `explain --ai`
+   Ask the controlled advisor to summarize what matters.
+4. `apply`
+   Review the dry-run plan shown by ClawRemove and confirm interactively.
+5. `apply --yes`
+   Use only for automation or after prior review.
+
+By default, `apply` is not silent. It prints a preview and asks you to type a confirmation phrase before removal starts.
+
+This keeps the tool comprehensive without turning it into an unsafe fully automatic remover.
+
+If you need JSON output for automation, use `plan` or `verify` for review first, then call `apply --yes`.
 
 ## What ClawRemove Detects
 
@@ -348,6 +418,18 @@ Ask for an LLM-assisted explanation:
 
 ```bash
 claw-remove explain --product openclaw --ai --json
+```
+
+Run a safe interactive removal:
+
+```bash
+claw-remove apply --product openclaw
+```
+
+Run a non-interactive removal only after review:
+
+```bash
+claw-remove apply --product openclaw --yes
 ```
 
 ## Roadmap

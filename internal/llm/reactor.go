@@ -35,7 +35,7 @@ func NewAdvisorFromEnv(runner system.Runner) Advisor {
 		return NewNoopAdvisor()
 	}
 	return controlledAdvisor{
-		client: newOpenAICompatibleClient(cfg),
+		client: newClientFromConfig(cfg),
 		config: cfg,
 		runner: runner,
 	}

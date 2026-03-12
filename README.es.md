@@ -63,6 +63,13 @@ ClawRemove puede integrar una capa de analisis asistida por LLM, pero con limite
 
 Asi ClawRemove puede ser tan util como un agente sin convertirse en otro agente invasivo.
 
+Esta capacidad ya empezo a materializarse:
+
+- soporte para multiples proveedores LLM, incluyendo OpenAI, Anthropic y otros servicios OpenAI-compatible
+- un bucle ReAct controlado
+- protocolo de herramientas de solo lectura y probes controlados
+- una frontera dura que impide al modelo ejecutar acciones destructivas por su cuenta
+
 ## Comandos
 
 ```bash
@@ -71,6 +78,7 @@ claw-remove audit --product openclaw --json
 claw-remove plan --product openclaw --json
 claw-remove apply --product openclaw --dry-run
 claw-remove apply --product openclaw
+claw-remove apply --product openclaw --yes
 claw-remove verify --product openclaw --json
 claw-remove explain --product openclaw --json
 ```
@@ -84,7 +92,7 @@ claw-remove explain --product openclaw --json
 - `plan`
   Genera un plan sin aplicarlo
 - `apply`
-  Ejecuta el plan
+  Ejecuta el plan despues de una confirmacion interactiva de seguridad
 - `verify`
   Ejecuta una verificación posterior a la eliminación
 - `explain`
@@ -100,6 +108,8 @@ claw-remove explain --product openclaw --json
   Incluye analisis asesorado y controlado en el reporte
 - `--dry-run`
   Muestra los cambios previstos sin aplicarlos
+- `--yes`
+  Omite la confirmacion interactiva solo despues de revisar el plan
 - `--keep-cli`
   Conserva la desinstalación del CLI y los wrappers
 - `--keep-app`
@@ -112,6 +122,88 @@ claw-remove explain --product openclaw --json
   Permite terminar procesos coincidentes
 - `--remove-docker`
   Permite eliminar contenedores e imágenes de Docker o Podman
+
+## Configuracion LLM
+
+ClawRemove puede adjuntar un advisor controlado a `audit`, `verify` y `explain`.
+
+Si no hay configuracion LLM, ClawRemove vuelve automaticamente al modo determinista.
+
+Proveedores soportados:
+
+- `openai`
+- `anthropic`
+- `openai-compatible`
+
+Variables de entorno:
+
+- `CLAWREMOVE_LLM_PROVIDER`
+  Uno de `openai`, `anthropic` u `openai-compatible`
+- `CLAWREMOVE_LLM_API_KEY`
+  API key generica
+- `OPENAI_API_KEY`
+  Fallback key cuando el provider es `openai`
+- `ANTHROPIC_API_KEY`
+  Fallback key cuando el provider es `anthropic`
+- `CLAWREMOVE_LLM_BASE_URL`
+  Override del base URL
+- `CLAWREMOVE_LLM_MODEL`
+  Override del modelo
+- `CLAWREMOVE_LLM_MAX_TOKENS`
+  Limite de tokens para respuestas asesoradas
+- `CLAWREMOVE_LLM_MAX_STEPS`
+  Maximo de pasos ReAct controlados
+- `CLAWREMOVE_LLM_TIMEOUT_SECONDS`
+  Timeout en segundos
+
+Ejemplo con OpenAI:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDER="openai"
+export OPENAI_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="gpt-4.1-mini"
+claw-remove explain --product openclaw --ai --json
+```
+
+Ejemplo con Anthropic:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
+export ANTHROPIC_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="claude-3-5-sonnet-latest"
+claw-remove explain --product openclaw --ai --json
+```
+
+Ejemplo con otro proveedor OpenAI-compatible:
+
+```bash
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://your-provider.example/v1"
+export CLAWREMOVE_LLM_API_KEY="..."
+export CLAWREMOVE_LLM_MODEL="your-model-name"
+claw-remove explain --product openclaw --ai --json
+```
+
+## Flujo de eliminacion segura
+
+Flujo recomendado:
+
+1. `audit`
+   Ver lo que encontro ClawRemove
+2. `verify`
+   Separar residuos confirmados de residuos para investigar
+3. `explain --ai`
+   Pedir al advisor controlado un resumen
+4. `apply`
+   Revisar el preview y confirmar con una frase interactiva
+5. `apply --yes`
+   Usar solo despues de la revision previa o en automatizacion controlada
+
+Por defecto, `apply` no es silencioso ni totalmente automatico.
+
+Primero muestra el preview y despues exige una frase de confirmacion antes de empezar a eliminar.
+
+Si una automatizacion necesita JSON, conviene revisar primero con `plan` o `verify` y despues usar `apply --yes`.
 
 ## Qué detecta ClawRemove
 
@@ -205,6 +297,12 @@ Ejecutar de verdad:
 
 ```bash
 claw-remove apply --product openclaw
+```
+
+Ejecutar sin interaccion solo despues de revisar:
+
+```bash
+claw-remove apply --product openclaw --yes
 ```
 
 Verificar al final:

@@ -1,11 +1,14 @@
 package app
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 
 	"github.com/tianrking/ClawRemove/internal/core"
 	"github.com/tianrking/ClawRemove/internal/llm"
@@ -27,6 +30,27 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 
 	runner := system.NewRunner()
 	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner), platform.Detect())
+	if options.Command == "apply" && !options.DryRun && !options.Yes {
+		if options.JSON {
+			return 2, errors.New("interactive apply requires a TTY-style confirmation; rerun without --json or use --yes after reviewing plan")
+		}
+		preview := options
+		preview.DryRun = true
+		report, err := engine.Run(ctx, preview)
+		if err != nil {
+			return 1, err
+		}
+		if err := output.PrintReport(stdout, report, false); err != nil {
+			return 1, err
+		}
+		confirmed, err := confirmApply(stdout, stderr, options.Product, report)
+		if err != nil {
+			return 1, err
+		}
+		if !confirmed {
+			return 1, errors.New("apply cancelled by user")
+		}
+	}
 	report, err := engine.Run(ctx, options)
 	if err != nil {
 		return 1, err
@@ -38,6 +62,26 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 1, errors.New("one or more actions failed")
 	}
 	return 0, nil
+}
+
+func confirmApply(stdout io.Writer, stderr io.Writer, product string, report model.Report) (bool, error) {
+	_, _ = io.WriteString(stdout, "\nSafety check:\n")
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Confirmed residuals: %d\n", len(report.Verify.Confirmed)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Investigate residuals: %d\n", len(report.Verify.Investigate)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("- Planned actions: %d\n", len(report.Plan.Actions)))
+	_, _ = io.WriteString(stdout, fmt.Sprintf("Type REMOVE %s to continue: ", strings.ToUpper(product)))
+
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, err
+	}
+	expected := "REMOVE " + strings.ToUpper(product)
+	if strings.TrimSpace(line) != expected {
+		_, _ = io.WriteString(stderr, "Confirmation phrase did not match. No removal actions were executed.\n")
+		return false, nil
+	}
+	return true, nil
 }
 
 func parseOptions(args []string) (model.Options, error) {
