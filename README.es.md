@@ -20,6 +20,7 @@ Su objetivo es muy claro: descubrir residuos reales de OpenClaw y otros agentes 
 - English: [README.md](./README.md)
 - 中文: [README.zh-CN.md](./README.zh-CN.md)
 - Plan de desarrollo: [docs/PLAN.md](./docs/PLAN.md)
+- Arquitectura: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ## Soporte actual
 

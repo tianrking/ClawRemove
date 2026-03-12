@@ -36,6 +36,7 @@ ClawRemove should be understood as a controlled uninstall claw:
 - 中文: [README.zh-CN.md](./README.zh-CN.md)
 - Español: [README.es.md](./README.es.md)
 - Development plan for agents: [docs/PLAN.md](./docs/PLAN.md)
+- Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ## Scope
 
@@ -103,6 +104,8 @@ The first implementation of this architecture is now present:
 - a read-only tool protocol over in-memory discovery and plan data
 - provider-specific skills and tools metadata
 - a hard boundary that prevents the model from issuing destructive commands directly
+
+The current architecture assessment and target structure are documented in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## Commands
 
@@ -269,6 +272,19 @@ Each provider can define:
   Read-only probes that are safe for the advisor to call when investigating already discovered targets.
 
 This structure is intended to scale as ClawRemove adds more products, more models, and richer operator guidance without turning the engine into an unbounded autonomous agent.
+
+## Architecture Status
+
+Current state:
+
+- clear enough to build on
+- not bloated yet
+- partially decoupled
+- still needs a dedicated evidence layer
+- still needs stronger platform adapters
+- still needs a cleaner split inside the LLM subsystem
+
+ClawRemove is intentionally being shaped toward a stricter architecture now, before more providers and models make the code harder to untangle.
 
 ## Verification Model
 

@@ -92,15 +92,17 @@ Implemented today:
 - multi-provider LLM client for OpenAI, Anthropic, and OpenAI-compatible APIs
 - residual verification classifier with confirmed versus investigate buckets
 - provider capability model with provider-specific skills and tools
+- explicit architecture assessment in `docs/ARCHITECTURE.md`
 
 Still missing or incomplete:
 
-- deeper post-removal verification semantics
+- a dedicated evidence layer between discovery and plan
 - stronger platform-specific adapters
 - formal release packaging and checksums
 - richer legacy alias coverage for historical claw naming drift
 - stable contributor workflow for adding new providers
 - a richer provider skill and tool authoring workflow
+- a cleaner split of prompts, providers, and reactor logic inside `internal/llm`
 
 ## Delivery Phases
 
@@ -136,6 +138,7 @@ Work items:
 - formalize `ProductProvider` and evidence interfaces
 - formalize provider skills and tool contracts
 - add a `platform` adapter layer
+- add a dedicated `evidence` layer between discovery and planning
 - split exact, strong, and heuristic evidence into explicit types
 - standardize action metadata: reason, evidence, risk, opt-in requirement
 - add regression tests around discovery and planning
@@ -160,6 +163,7 @@ Work items:
 - make model output structured and machine-validated
 - document safe prompt and tool rules
 - let advisors consume provider-declared skills and tool inventories
+- split the current LLM subsystem into prompts, providers, and reactor packages
 
 Exit criteria:
 
@@ -204,12 +208,12 @@ Exit criteria:
 Priority order for the next development iterations:
 
 1. Add version injection and release packaging.
-2. Introduce dedicated `internal/skills` and `internal/tools` packages.
-3. Introduce `internal/platform` adapters.
-4. Expand OpenClaw legacy aliases and service naming coverage.
-5. Add provider-aware multi-model routing and advisor trace output.
-6. Add tests for planning edge cases and provider evidence classification.
-7. Add GitHub release workflow with archives and checksums.
+2. Introduce a dedicated `internal/evidence` package.
+3. Split the current `internal/llm` package into prompts, providers, and reactor layers.
+4. Introduce stronger `internal/platform/*` adapters.
+5. Turn `internal/skills` and `internal/tools` into real runtime contracts.
+6. Expand OpenClaw legacy aliases and service naming coverage.
+7. Add provider-aware multi-model routing trace output and GitHub release automation.
 
 ## Rules For Agents
 
@@ -242,6 +246,8 @@ A feature is done only when all of the following are true:
 
 `docs/PLAN.md` explains where the project is going and how agents should continue development safely.
 
+`docs/ARCHITECTURE.md` explains how the system is structured today, what is still too coupled, and what the target architecture should become.
+
 This file should stay current whenever major architecture or roadmap decisions change.
 
-When code structure, provider capabilities, or advisor behavior changes, both `README.md` and `docs/PLAN.md` must be updated in the same change.
+When code structure, provider capabilities, or advisor behavior changes, `README.md`, `docs/PLAN.md`, and `docs/ARCHITECTURE.md` must be updated in the same change.

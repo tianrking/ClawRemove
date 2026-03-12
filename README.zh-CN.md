@@ -20,6 +20,7 @@ ClawRemove 是一个使用 Go 编写的专业跨平台 claw 卸载引擎。
 - English: [README.md](./README.md)
 - Español: [README.es.md](./README.es.md)
 - 开发计划: [docs/PLAN.md](./docs/PLAN.md)
+- 架构说明: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ## 当前支持
 
