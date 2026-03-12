@@ -28,6 +28,15 @@ func (NoopAdvisor) Assess(_ context.Context, report model.Report) model.Advice {
 		Recommendations: []model.Recommendation{},
 	}
 
+	if report.Verify.Verified {
+		advice.ThoughtSummary = fmt.Sprintf(
+			"Verification classified residuals into exact=%d, strong=%d, heuristic=%d. Confirmed residue should be prioritized before heuristic investigation.",
+			report.Verify.Summary.Exact,
+			report.Verify.Summary.Strong,
+			report.Verify.Summary.Heuristic,
+		)
+	}
+
 	if len(report.Discovery.Processes) > 0 {
 		advice.Recommendations = append(advice.Recommendations, model.Recommendation{
 			Kind:     "review_processes",
@@ -50,6 +59,26 @@ func (NoopAdvisor) Assess(_ context.Context, report model.Report) model.Advice {
 	}
 	if len(report.Discovery.StateDirs)+len(report.Discovery.WorkspaceDirs)+len(report.Discovery.AppPaths) == 0 {
 		advice.UserMessage = "No major filesystem residue was discovered for this provider on the current host."
+	}
+	if len(report.Verify.Confirmed) > 0 {
+		advice.Recommendations = append(advice.Recommendations, model.Recommendation{
+			Kind:     "remove_confirmed_residue",
+			Target:   fmt.Sprintf("%d confirmed residual(s)", len(report.Verify.Confirmed)),
+			Reason:   "Exact and strong evidence indicate these leftovers still belong to the target product.",
+			Risk:     "medium",
+			OptIn:    false,
+			Evidence: "strong",
+		})
+	}
+	if len(report.Verify.Investigate) > 0 {
+		advice.Recommendations = append(advice.Recommendations, model.Recommendation{
+			Kind:     "investigate_heuristics",
+			Target:   fmt.Sprintf("%d heuristic residual(s)", len(report.Verify.Investigate)),
+			Reason:   "These findings should be reviewed before turning them into deletion actions.",
+			Risk:     "low",
+			OptIn:    false,
+			Evidence: "heuristic",
+		})
 	}
 	if report.Command == "explain" {
 		advice.UserMessage = "This explanation summarizes what ClawRemove found and what should be reviewed before removal."

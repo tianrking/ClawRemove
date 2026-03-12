@@ -86,6 +86,7 @@ Implemented today:
 - multilingual README set
 - controlled advisor scaffold and `explain` command
 - OpenAI-compatible LLM client with a read-only ReAct tool loop
+- residual verification classifier with confirmed versus investigate buckets
 
 Still missing or incomplete:
 

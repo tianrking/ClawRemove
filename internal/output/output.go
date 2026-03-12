@@ -29,6 +29,7 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		fmt.Sprintf("Processes: %d", len(report.Discovery.Processes)),
 		fmt.Sprintf("Containers: %d", len(report.Discovery.Containers)),
 		fmt.Sprintf("Images: %d", len(report.Discovery.Images)),
+		fmt.Sprintf("Verified residuals: exact=%d strong=%d heuristic=%d", report.Verify.Summary.Exact, report.Verify.Summary.Strong, report.Verify.Summary.Heuristic),
 		fmt.Sprintf("Planned actions: %d", len(report.Plan.Actions)),
 	}
 	if report.AuditOnly {
@@ -61,6 +62,15 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 		for _, rec := range report.Advice.Recommendations {
 			line := fmt.Sprintf("- Recommendation: %s :: %s :: risk=%s :: evidence=%s", rec.Kind, rec.Target, rec.Risk, rec.Evidence)
 			lines = append(lines, line)
+		}
+	}
+	if report.Verify.Verified {
+		lines = append(lines, "", "Verification:")
+		for _, residual := range report.Verify.Confirmed {
+			lines = append(lines, fmt.Sprintf("- Confirmed: %s :: %s :: evidence=%s", residual.Kind, residual.Target, residual.Evidence))
+		}
+		for _, residual := range report.Verify.Investigate {
+			lines = append(lines, fmt.Sprintf("- Investigate: %s :: %s :: evidence=%s", residual.Kind, residual.Target, residual.Evidence))
 		}
 	}
 	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")

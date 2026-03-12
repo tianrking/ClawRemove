@@ -50,8 +50,22 @@ func TestControlledAdvisorRunsReadOnlyToolLoop(t *testing.T) {
 }
 
 func TestExecuteToolRejectsUnsupportedTool(t *testing.T) {
-	_, err := executeTool(model.Report{}, "destroy_system", nil)
+	advisor := controlledAdvisor{}
+	_, err := advisor.executeTool(model.Report{}, "destroy_system", nil)
 	if err == nil {
 		t.Fatal("expected unsupported tool error")
+	}
+}
+
+func TestPathProbeRejectsUnknownTarget(t *testing.T) {
+	advisor := controlledAdvisor{}
+	report := model.Report{
+		Discovery: model.Discovery{
+			StateDirs: []string{"/tmp/.openclaw"},
+		},
+	}
+	_, err := advisor.executeTool(report, "path_probe", map[string]any{"target": "/tmp/not-allowed"})
+	if err == nil {
+		t.Fatal("expected path probe to reject unknown target")
 	}
 }

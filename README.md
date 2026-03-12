@@ -123,7 +123,7 @@ claw-remove explain --product openclaw --json
 - `apply`
   Executes the planned actions.
 - `verify`
-  Runs a post-removal verification pass.
+  Runs a post-removal verification pass with residual classification.
 - `explain`
   Produces controlled advisory analysis on top of deterministic discovery.
 
@@ -188,6 +188,7 @@ The LLM does not receive shell access.
 Instead, it can request only read-only tools over the existing report:
 
 - `summary`
+- `verification`
 - `state_dirs`
 - `workspace_dirs`
 - `services`
@@ -195,8 +196,28 @@ Instead, it can request only read-only tools over the existing report:
 - `processes`
 - `containers`
 - `plan_actions`
+- `path_probe`
+- `service_probe`
+- `package_probe`
+- `process_probe`
+- `shell_profile_probe`
 
-Those tools inspect in-memory data already collected by the deterministic engine. They do not execute system commands, mutate files, or broaden the scan surface.
+Those tools either inspect in-memory data already collected by the deterministic engine or perform tightly scoped read-only probes against already discovered targets. They do not mutate files, do not delete data, and do not broaden the scan surface beyond known findings.
+
+## Verification Model
+
+`verify` now classifies leftovers instead of behaving like a second plain audit pass.
+
+Residuals are grouped as:
+
+- `exact`
+  Confirmed product-owned residue, such as state directories and app artifacts.
+- `strong`
+  Highly likely residue, such as installed packages, service registrations, and live matching processes.
+- `heuristic`
+  Evidence that still needs human review, such as listeners, shell profiles, and some cron or image matches.
+
+This classification is also exposed to the LLM advisor so the model can reason over stronger evidence instead of guessing from raw discovery alone.
 
 ## What ClawRemove Detects
 

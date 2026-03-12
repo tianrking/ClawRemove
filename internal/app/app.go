@@ -25,7 +25,8 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		return 0, printProducts(stdout, options.JSON)
 	}
 
-	engine := core.NewEngine(system.NewRunner(), llm.NewAdvisorFromEnv(), platform.Detect())
+	runner := system.NewRunner()
+	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner), platform.Detect())
 	report, err := engine.Run(ctx, options)
 	if err != nil {
 		return 1, err

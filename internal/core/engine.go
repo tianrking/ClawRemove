@@ -11,6 +11,7 @@ import (
 	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/products"
 	"github.com/tianrking/ClawRemove/internal/system"
+	"github.com/tianrking/ClawRemove/internal/verify"
 )
 
 type Engine struct {
@@ -36,6 +37,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 	}
 
 	executionPlan := plan.Build(discovered, provider.Facts(), options)
+	verification := verify.Classify(discovered, provider.Facts())
 	var results []model.Result
 	if options.Command == "apply" && !options.AuditOnly {
 		exec := executor.New(e.runner)
@@ -68,6 +70,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 				HomeEnv: e.host.HomeEnv,
 			},
 			Discovery: discovered,
+			Verify:    verification,
 			Plan:      executionPlan,
 			Results:   results,
 		})
@@ -87,6 +90,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 			HomeEnv: e.host.HomeEnv,
 		},
 		Discovery: discovered,
+		Verify:    verification,
 		Plan:      executionPlan,
 		Results:   results,
 		Advice:    advice,

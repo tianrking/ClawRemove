@@ -123,16 +123,39 @@ type Result struct {
 }
 
 type Report struct {
-	OK        bool      `json:"ok"`
-	Product   string    `json:"product"`
-	Command   string    `json:"command"`
-	DryRun    bool      `json:"dryRun"`
-	AuditOnly bool      `json:"auditOnly"`
-	Host      Host      `json:"host"`
-	Discovery Discovery `json:"discovery"`
-	Plan      Plan      `json:"plan"`
-	Results   []Result  `json:"results"`
-	Advice    *Advice   `json:"advice,omitempty"`
+	OK        bool         `json:"ok"`
+	Product   string       `json:"product"`
+	Command   string       `json:"command"`
+	DryRun    bool         `json:"dryRun"`
+	AuditOnly bool         `json:"auditOnly"`
+	Host      Host         `json:"host"`
+	Discovery Discovery    `json:"discovery"`
+	Verify    Verification `json:"verify"`
+	Plan      Plan         `json:"plan"`
+	Results   []Result     `json:"results"`
+	Advice    *Advice      `json:"advice,omitempty"`
+}
+
+type Residual struct {
+	Kind     string `json:"kind"`
+	Target   string `json:"target"`
+	Evidence string `json:"evidence"`
+	Reason   string `json:"reason"`
+	Risk     string `json:"risk,omitempty"`
+}
+
+type VerificationSummary struct {
+	Exact     int `json:"exact"`
+	Strong    int `json:"strong"`
+	Heuristic int `json:"heuristic"`
+}
+
+type Verification struct {
+	Verified    bool                `json:"verified"`
+	Summary     VerificationSummary `json:"summary"`
+	Residuals   []Residual          `json:"residuals"`
+	Confirmed   []Residual          `json:"confirmed"`
+	Investigate []Residual          `json:"investigate"`
 }
 
 type Recommendation struct {
