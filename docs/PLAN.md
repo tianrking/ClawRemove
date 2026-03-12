@@ -220,8 +220,7 @@ Exit criteria:
 
 Priority order for the next development iterations:
 
-1. Add GitHub release automation.
-2. Add deeper platform adapter tests for service/process/listener edge cases.
+1. Add deeper platform adapter tests for service/process/listener edge cases.
 
 ## Rules For Agents
 
