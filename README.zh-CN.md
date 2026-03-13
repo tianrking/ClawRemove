@@ -131,6 +131,27 @@ export CLAWREMOVE_LLM_API_KEY="你的密钥"
 claw-remove explain --product openclaw --ai
 ```
 
+**方式四：Anthropic 兼容接口（如智谱AI等）**
+```bash
+# 配置 Anthropic 格式的提供商
+export CLAWREMOVE_LLM_PROVIDER="anthropic-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+export CLAWREMOVE_LLM_API_KEY="你的智谱API密钥"
+export CLAWREMOVE_LLM_MODEL="glm-4-plus"
+
+# 使用 AI 分析
+claw-remove explain --product openclaw --ai
+```
+
+### 支持的提供商类型
+
+| 类型 | API 格式 | 适用场景 |
+|------|----------|----------|
+| `openai` | OpenAI 原生 | OpenAI 官方 API |
+| `anthropic` | Anthropic 原生 | Claude 官方 API |
+| `openai-compatible` | `/chat/completions` | 第三方 OpenAI 兼容服务 |
+| `anthropic-compatible` | `/messages` | 第三方 Anthropic 兼容服务（如智谱AI） |
+
 ### 所有 LLM 配置选项
 
 | 变量 | 说明 | 示例 |
@@ -284,9 +305,12 @@ ClawRemove 可以在 `audit`、`verify` 和 `explain` 中挂载受控 advisor。
 
 支持的 provider：
 
-- `openai`
-- `anthropic`
-- `openai-compatible`
+| 类型 | API 格式 | 说明 |
+|------|----------|------|
+| `openai` | OpenAI 原生 | OpenAI 官方 API |
+| `anthropic` | Anthropic 原生 | Claude 官方 API |
+| `openai-compatible` | `/chat/completions` | 第三方 OpenAI 兼容服务 |
+| `anthropic-compatible` | `/messages` | 第三方 Anthropic 兼容服务 |
 
 环境变量：
 

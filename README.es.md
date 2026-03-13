@@ -103,16 +103,44 @@ ClawRemove puede usar IA para explicar hallazgos en lenguaje sencillo. Esto es *
 
 ### Configuración Rápida
 
+**Opción 1: OpenAI**
 ```bash
-# Auditoría mejorada con análisis IA
-claw-remove audit --ai
-
-# Explicar hallazgos con asistencia IA
-claw-remove explain --ai
-
-# Análisis completo del entorno
-claw-remove environment --ai
+export OPENAI_API_KEY="sk-tu-clave"
+claw-remove explain --product openclaw --ai
 ```
+
+**Opción 2: Anthropic Claude**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-tu-clave"
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
+claw-remove explain --product openclaw --ai
+```
+
+**Opción 3: Proveedor OpenAI-Compatible**
+```bash
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://tu-proveedor.com/v1"
+export CLAWREMOVE_LLM_API_KEY="tu-clave"
+claw-remove explain --product openclaw --ai
+```
+
+**Opción 4: Proveedor Anthropic-Compatible (ej: ZhipuAI)**
+```bash
+export CLAWREMOVE_LLM_PROVIDER="anthropic-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+export CLAWREMOVE_LLM_API_KEY="tu-clave-zhipu"
+export CLAWREMOVE_LLM_MODEL="glm-4-plus"
+claw-remove explain --product openclaw --ai
+```
+
+### Tipos de Proveedor Soportados
+
+| Tipo | Formato API | Descripción |
+|------|-------------|-------------|
+| `openai` | OpenAI nativo | API oficial de OpenAI |
+| `anthropic` | Anthropic nativo | API oficial de Claude |
+| `openai-compatible` | `/chat/completions` | Servicios compatibles con OpenAI |
+| `anthropic-compatible` | `/messages` | Servicios compatibles con Anthropic (ej: ZhipuAI) |
 
 ### Análisis ReAct Profundo
 
@@ -239,9 +267,12 @@ Si no hay configuracion LLM, ClawRemove vuelve automaticamente al modo determini
 
 Proveedores soportados:
 
-- `openai`
-- `anthropic`
-- `openai-compatible`
+| Tipo | Formato API | Descripción |
+|------|-------------|-------------|
+| `openai` | OpenAI nativo | API oficial de OpenAI |
+| `anthropic` | Anthropic nativo | API oficial de Claude |
+| `openai-compatible` | `/chat/completions` | Servicios compatibles con OpenAI |
+| `anthropic-compatible` | `/messages` | Servicios compatibles con Anthropic |
 
 Variables de entorno:
 

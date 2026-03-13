@@ -140,7 +140,7 @@ func NewFromConfig(cfg Config) Client {
 
 func newSingleClient(cfg singleConfig) modelClient {
 	switch cfg.Provider {
-	case "anthropic":
+	case "anthropic", "anthropic-compatible":
 		return anthropicClient{
 			httpClient: &http.Client{Timeout: cfg.Timeout},
 			config:     cfg,

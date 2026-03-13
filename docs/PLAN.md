@@ -334,3 +334,47 @@ ClawRemove fills this gap:
 - ✔ Technically achievable
 - ✔ Won't over-bloat
 - ✔ Clear value proposition
+
+## LLM Provider Support
+
+ClawRemove supports multiple LLM providers for AI-powered analysis:
+
+### Supported Provider Types
+
+| Type | API Format | Use Case |
+|------|------------|----------|
+| `openai` | OpenAI native | OpenAI official API |
+| `anthropic` | Anthropic native | Claude official API |
+| `openai-compatible` | `/chat/completions` | Third-party OpenAI-compatible services |
+| `anthropic-compatible` | `/messages` | Third-party Anthropic-compatible services (e.g., ZhipuAI) |
+
+### Configuration
+
+```bash
+# OpenAI
+export OPENAI_API_KEY="sk-xxx"
+export CLAWREMOVE_LLM_MODEL="GPT-5.4"
+
+# Anthropic
+export ANTHROPIC_API_KEY="sk-ant-xxx"
+export CLAWREMOVE_LLM_PROVIDER="anthropic"
+export CLAWREMOVE_LLM_MODEL="claude-opus-4-6-20250205"
+
+# OpenAI-compatible (e.g., local LLM, custom provider)
+export CLAWREMOVE_LLM_PROVIDER="openai-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://your-provider.com/v1"
+export CLAWREMOVE_LLM_API_KEY="your-key"
+
+# Anthropic-compatible (e.g., ZhipuAI 智谱AI)
+export CLAWREMOVE_LLM_PROVIDER="anthropic-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+export CLAWREMOVE_LLM_API_KEY="your-zhipu-key"
+export CLAWREMOVE_LLM_MODEL="glm-4-plus"
+```
+
+### API Format Details
+
+- **OpenAI-compatible**: Uses `/chat/completions` endpoint with messages array
+- **Anthropic-compatible**: Uses `/messages` endpoint with Anthropic-style request format
+
+Both formats are supported for custom SaaS providers, allowing maximum flexibility.

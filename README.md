@@ -271,17 +271,40 @@ export CLAWREMOVE_LLM_API_KEY="your-key"
 claw-remove explain --product openclaw --ai
 ```
 
+**Option 4: Anthropic-Compatible (e.g., ZhipuAI Coding)**
+```bash
+# Configure Anthropic-compatible provider
+export CLAWREMOVE_LLM_PROVIDER="anthropic-compatible"
+export CLAWREMOVE_LLM_BASE_URL="https://open.bigmodel.cn/api/coding/paas/v4"
+export CLAWREMOVE_LLM_API_KEY="your-zhipu-api-key"
+export CLAWREMOVE_LLM_MODEL="GLM-4.5"
+
+# Use AI analysis
+claw-remove explain --product openclaw --ai
+```
+
 ### All LLM Configuration Options
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `CLAWREMOVE_LLM_PROVIDER` | Provider type | `openai`, `anthropic`, `openai-compatible` |
+| `CLAWREMOVE_LLM_PROVIDER` | Provider type | `openai`, `anthropic`, `openai-compatible`, `anthropic-compatible` |
 | `CLAWREMOVE_LLM_API_KEY` | API key (generic) | `sk-xxx` |
 | `OPENAI_API_KEY` | OpenAI key (fallback) | `sk-xxx` |
 | `ANTHROPIC_API_KEY` | Anthropic key (fallback) | `sk-ant-xxx` |
 | `CLAWREMOVE_LLM_BASE_URL` | Custom API URL | `https://api.example.com/v1` |
-| `CLAWREMOVE_LLM_MODEL` | Model override | `GPT-5.4`, `claude-opus-4-6` |
+| `CLAWREMOVE_LLM_MODEL` | Model override | `GPT-5.4`, `claude-opus-4-6`, `GLM-4.5` |
 | `CLAWREMOVE_LLM_TIMEOUT_SECONDS` | Request timeout | `60` |
+
+### Supported Provider Types
+
+| Provider | API Format | Use Case |
+|----------|------------|----------|
+| `openai` | OpenAI Native | OpenAI GPT models |
+| `anthropic` | Anthropic Native | Claude models |
+| `openai-compatible` | OpenAI `/chat/completions` | Custom providers (Ollama, vLLM, etc.) |
+| `anthropic-compatible` | Anthropic `/messages` | ZhipuAI Coding, other Anthropic-format APIs |
+| `openrouter` | OpenAI `/chat/completions` | OpenRouter aggregator |
+| `zhipu` | OpenAI `/chat/completions` | ZhipuAI general API |
 
 ### Commands with AI
 
