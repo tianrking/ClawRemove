@@ -556,6 +556,85 @@ claw-remove verify --product openclaw --json
 claw-remove explain --product openclaw --json
 ```
 
+## 卸载 ClawRemove
+
+完全从系统中移除 ClawRemove：
+
+### macOS (DMG/tarball)
+
+```bash
+# 删除二进制文件
+sudo rm -f /usr/local/bin/claw-remove
+# 如果通过 DMG 安装
+sudo rm -rf /Applications/claw-remove.app
+
+# 删除 shell 补全（如果安装了）
+rm -f ~/.zsh/completion/_claw-remove
+rm -f ~/.bash_completion.d/claw-remove
+```
+
+### Linux (deb)
+
+```bash
+# 删除包
+sudo dpkg --remove claw-remove
+
+# 或完全清除（包括配置）
+sudo dpkg --purge claw-remove
+
+# 手动清理（如果从 tarball 安装）
+sudo rm -f /usr/local/bin/claw-remove
+sudo rm -f /usr/share/man/man1/claw-remove.1.gz
+```
+
+### Linux (rpm)
+
+```bash
+# 删除包
+sudo rpm -e claw-remove
+
+# 手动清理（如果从 tarball 安装）
+sudo rm -f /usr/bin/claw-remove
+```
+
+### Linux (AppImage)
+
+```bash
+# 直接删除 AppImage 文件
+rm -f claw-remove-*.AppImage
+
+# 删除桌面集成（如果有）
+rm -f ~/.local/share/applications/claw-remove.desktop
+rm -f ~/.local/share/icons/claw-remove.png
+```
+
+### Windows
+
+```powershell
+# 从安装目录删除
+Remove-Item -Recurse -Force "C:\Tools\claw-remove"
+
+# 或仅删除 PATH 中的文件
+Remove-Item "C:\Tools\claw-remove\claw-remove.exe"
+```
+
+### 从源码安装 (go install)
+
+```bash
+# 删除二进制
+rm -f $(go env GOPATH)/bin/claw-remove
+
+# 清理模块缓存（可选）
+go clean -modcache
+```
+
+### 验证完全删除
+
+```bash
+# 应该返回 "command not found"
+which claw-remove || echo "ClawRemove 已成功删除"
+```
+
 ## 路线图
 
 完整开发路线图见 [docs/PLAN.md](./docs/PLAN.md)。

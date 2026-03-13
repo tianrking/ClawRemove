@@ -518,6 +518,85 @@ Verify residual state:
 claw-remove verify --product openclaw --json
 ```
 
+## Uninstalling ClawRemove
+
+To completely remove ClawRemove from your system:
+
+### macOS (DMG/tarball)
+
+```bash
+# Remove binary
+sudo rm -f /usr/local/bin/claw-remove
+# Or if installed via DMG
+sudo rm -rf /Applications/claw-remove.app
+
+# Remove shell completions (if installed)
+rm -f ~/.zsh/completion/_claw-remove
+rm -f ~/.bash_completion.d/claw-remove
+```
+
+### Linux (deb)
+
+```bash
+# Remove package
+sudo dpkg --remove claw-remove
+
+# Or completely purge (including configs)
+sudo dpkg --purge claw-remove
+
+# Manual cleanup (if installed from tarball)
+sudo rm -f /usr/local/bin/claw-remove
+sudo rm -f /usr/share/man/man1/claw-remove.1.gz
+```
+
+### Linux (rpm)
+
+```bash
+# Remove package
+sudo rpm -e claw-remove
+
+# Manual cleanup (if installed from tarball)
+sudo rm -f /usr/bin/claw-remove
+```
+
+### Linux (AppImage)
+
+```bash
+# Simply delete the AppImage file
+rm -f claw-remove-*.AppImage
+
+# Remove desktop integration (if any)
+rm -f ~/.local/share/applications/claw-remove.desktop
+rm -f ~/.local/share/icons/claw-remove.png
+```
+
+### Windows
+
+```powershell
+# Remove from the installation directory
+Remove-Item -Recurse -Force "C:\Tools\claw-remove"
+
+# Or if added to PATH only
+Remove-Item "C:\Tools\claw-remove\claw-remove.exe"
+```
+
+### From Source (go install)
+
+```bash
+# Remove binary
+rm -f $(go env GOPATH)/bin/claw-remove
+
+# Clean module cache (optional)
+go clean -modcache
+```
+
+### Verify Complete Removal
+
+```bash
+# Should return "command not found"
+which claw-remove || echo "ClawRemove successfully removed"
+```
+
 ## Roadmap
 
 The long-term roadmap lives in [docs/PLAN.md](./docs/PLAN.md).

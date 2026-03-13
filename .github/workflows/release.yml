@@ -92,14 +92,15 @@ jobs:
           echo "==> Release artifacts generated in ${DIST_DIR}"
           ls -la "${DIST_DIR}"
 
-      - name: Create deb package
+      - name: Create deb packages
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          mkdir -p pkg-deb/usr/bin
-          cp dist/claw-remove-linux-amd64 pkg-deb/usr/bin/claw-remove
-          chmod 755 pkg-deb/usr/bin/claw-remove
-          mkdir -p pkg-deb/DEBIAN
-          cat > pkg-deb/DEBIAN/control << EOF
+          # amd64
+          mkdir -p pkg-deb-amd64/usr/bin
+          cp dist/claw-remove-linux-amd64 pkg-deb-amd64/usr/bin/claw-remove
+          chmod 755 pkg-deb-amd64/usr/bin/claw-remove
+          mkdir -p pkg-deb-amd64/DEBIAN
+          cat > pkg-deb-amd64/DEBIAN/control << EOF
           Package: claw-remove
           Version: ${VERSION}
           Section: utils
@@ -109,13 +110,46 @@ jobs:
           Description: Agent Environment Inspector
            Inspect, audit and clean environments where AI agents run.
           EOF
-          dpkg-deb -b pkg-deb dist/claw-remove_${VERSION}_amd64.deb
+          dpkg-deb -b pkg-deb-amd64 dist/claw-remove_${VERSION}_amd64.deb
+          # arm64
+          mkdir -p pkg-deb-arm64/usr/bin
+          cp dist/claw-remove-linux-arm64 pkg-deb-arm64/usr/bin/claw-remove
+          chmod 755 pkg-deb-arm64/usr/bin/claw-remove
+          mkdir -p pkg-deb-arm64/DEBIAN
+          cat > pkg-deb-arm64/DEBIAN/control << EOF
+          Package: claw-remove
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: arm64
+          Maintainer: ClawRemove Team
+          Description: Agent Environment Inspector
+           Inspect, audit and clean environments where AI agents run.
+          EOF
+          dpkg-deb -b pkg-deb-arm64 dist/claw-remove_${VERSION}_arm64.deb
+          # armhf
+          mkdir -p pkg-deb-armhf/usr/bin
+          cp dist/claw-remove-linux-arm pkg-deb-armhf/usr/bin/claw-remove
+          chmod 755 pkg-deb-armhf/usr/bin/claw-remove
+          mkdir -p pkg-deb-armhf/DEBIAN
+          cat > pkg-deb-armhf/DEBIAN/control << EOF
+          Package: claw-remove
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: armhf
+          Maintainer: ClawRemove Team
+          Description: Agent Environment Inspector
+           Inspect, audit and clean environments where AI agents run.
+          EOF
+          dpkg-deb -b pkg-deb-armhf dist/claw-remove_${VERSION}_armhf.deb
 
-      - name: Create rpm package
+      - name: Create rpm packages
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          mkdir -p pkg-rpm/BUILD pkg-rpm/RPMS pkg-rpm/SOURCES pkg-rpm/SPECS pkg-rpm/SRPMS
-          cat > pkg-rpm/SPECS/claw-remove.spec << EOF
+          # x86_64
+          mkdir -p pkg-rpm-x64/BUILD pkg-rpm-x64/RPMS pkg-rpm-x64/SOURCES pkg-rpm-x64/SPECS pkg-rpm-x64/SRPMS
+          cat > pkg-rpm-x64/SPECS/claw-remove.spec << EOF
           Name: claw-remove
           Version: ${VERSION}
           Release: 1
@@ -140,9 +174,42 @@ jobs:
           * $(date '+%a %b %d %Y') ClawRemove Team <noreply@github.com> - ${VERSION}-1
           - Release ${VERSION}
           EOF
-          cp dist/claw-remove-linux-amd64 pkg-rpm/SOURCES/claw-remove
-          rpmbuild --define "_topdir ${PWD}/pkg-rpm" --define "_sourcedir ${PWD}/pkg-rpm/SOURCES" -bb pkg-rpm/SPECS/claw-remove.spec
-          mv pkg-rpm/RPMS/x86_64/claw-remove-*.rpm dist/
+          cp dist/claw-remove-linux-amd64 pkg-rpm-x64/SOURCES/claw-remove
+          rpmbuild --define "_topdir ${PWD}/pkg-rpm-x64" --define "_sourcedir ${PWD}/pkg-rpm-x64/SOURCES" -bb pkg-rpm-x64/SPECS/claw-remove.spec
+          mv pkg-rpm-x64/RPMS/x86_64/claw-remove-*.rpm dist/claw-remove-${VERSION}-1.x86_64.rpm
+          # aarch64
+          mkdir -p pkg-rpm-arm64/BUILD pkg-rpm-arm64/RPMS pkg-rpm-arm64/SOURCES pkg-rpm-arm64/SPECS pkg-rpm-arm64/SRPMS
+          cat > pkg-rpm-arm64/SPECS/claw-remove.spec << EOF
+          Name: claw-remove
+          Version: ${VERSION}
+          Release: 1
+          Summary: Agent Environment Inspector
+          License: MIT
+          URL: https://github.com/tianrking/ClawRemove
+          BuildArch: aarch64
+
+          %description
+          Inspect, audit and clean environments where AI agents run.
+
+          %prep
+
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          cp %{_sourcedir}/claw-remove %{buildroot}/usr/bin/claw-remove
+          chmod 755 %{buildroot}/usr/bin/claw-remove
+
+          %files
+          /usr/bin/claw-remove
+
+          %changelog
+          * $(date '+%a %b %d %Y') ClawRemove Team <noreply@github.com> - ${VERSION}-1
+          - Release ${VERSION}
+          EOF
+          cp dist/claw-remove-linux-arm64 pkg-rpm-arm64/SOURCES/claw-remove
+          rpmbuild --define "_topdir ${PWD}/pkg-rpm-arm64" --define "_sourcedir ${PWD}/pkg-rpm-arm64/SOURCES" --target aarch64 -bb pkg-rpm-arm64/SPECS/claw-remove.spec || true
+          if [ -f pkg-rpm-arm64/RPMS/aarch64/claw-remove-*.rpm ]; then
+            mv pkg-rpm-arm64/RPMS/aarch64/claw-remove-*.rpm dist/claw-remove-${VERSION}-1.aarch64.rpm
+          fi
 
       - name: Create AppImage
         run: |
