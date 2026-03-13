@@ -28,16 +28,16 @@ It focuses on AI agent runtime, tools, and artifacts - not general system cleani
 
 ```bash
 # Full environment audit
-clawremove audit
+claw-remove environment
 
 # Check for exposed API keys
-clawremove security
+claw-remove security
 
 # Analyze AI storage usage
-clawremove hygiene
+claw-remove hygiene
 
 # Clean up an agent
-clawremove cleanup --product openclaw
+claw-remove apply --product openclaw
 ```
 
 ## Documentation

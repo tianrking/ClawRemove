@@ -35,5 +35,5 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
             dist/sha256sums.txt
-          draft: true
+          draft: false
           generate_release_notes: true
