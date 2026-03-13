@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,19 +27,98 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rpm libarchive-tools fakeroot dpkg-dev file
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build binaries
+        run: ./scripts/build.sh
 
-  # macOS DMG (requires macOS runner for proper universal binary and DMG creation)
-  macos-dmg:
+      - name: Create deb package
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          mkdir -p pkg-deb/usr/bin
+          cp dist/claw-remove-linux-amd64 pkg-deb/usr/bin/claw-remove
+          chmod 755 pkg-deb/usr/bin/claw-remove
+          mkdir -p pkg-deb/DEBIAN
+          cat > pkg-deb/DEBIAN/control << EOF
+          Package: claw-remove
+          Version: ${VERSION#v}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: ClawRemove Team
+          Description: Agent Environment Inspector
+           Inspect, audit and clean environments where AI agents run.
+          EOF
+          dpkg-deb -b pkg-deb claw-remove_${VERSION#v}_amd64.deb
+
+      - name: Create rpm package
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          mkdir -p pkg-rpm/BUILD pkg-rpm/RPMS pkg-rpm/SOURCES pkg-rpm/SPECS pkg-rpm/SRPMS
+          cat > pkg-rpm/SPECS/claw-remove.spec << EOF
+          Name: claw-remove
+          Version: ${VERSION}
+          Release: 1
+          Summary: Agent Environment Inspector
+          License: MIT
+          URL: https://github.com/tianrking/ClawRemove
+
+          %description
+          Inspect, audit and clean environments where AI agents run.
+
+          %prep
+          # nothing
+
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          cp dist/claw-remove-linux-amd64 %{buildroot}/usr/bin/claw-remove
+          chmod 755 %{buildroot}/usr/bin/claw-remove
+
+          %files
+          /usr/bin/claw-remove
+
+          %changelog
+          * $(date '+%a %b %d %Y') ClawRemove Team <noreply@github.com> - ${VERSION}-1
+          - Release ${VERSION}
+          EOF
+          rpmbuild --define "_topdir ${PWD}/pkg-rpm" -bb pkg-rpm/SPECS/claw-remove.spec
+          mv pkg-rpm/RPMS/x86_64/claw-remove-*.rpm .
+
+      - name: Create AppImage
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          mkdir -p AppDir/usr/bin
+          cp dist/claw-remove-linux-amd64 AppDir/usr/bin/claw-remove
+          chmod 755 AppDir/usr/bin/claw-remove
+          cat > AppDir/claw-remove.desktop << EOF
+          [Desktop Entry]
+          Name=ClawRemove
+          Exec=claw-remove
+          Icon=claw-remove
+          Type=Application
+          Categories=Utility;
+          EOF
+          # Download appimagetool
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir claw-remove-${VERSION}-x86_64.AppImage || true
+          # Fallback if AppImage fails
+          if [ ! -f claw-remove-*.AppImage ]; then
+            tar -czf claw-remove-${VERSION}-linux-amd64-appdir.tar.gz -C AppDir .
+          fi
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/sha256sums.txt
+            claw-remove*.deb
+            claw-remove*.rpm
+            claw-remove*.AppImage
+            claw-remove*-appdir.tar.gz
+
+  build-macos:
     runs-on: macos-latest
-    needs: goreleaser
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +130,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build Universal Binary
+      - name: Build universal binary
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
           # Build for both architectures
@@ -65,6 +144,12 @@ jobs:
           lipo -create -output claw-remove claw-remove-amd64 claw-remove-arm64
           chmod +x claw-remove
 
+      - name: Create tarball
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          tar -czf claw-remove-${VERSION}-darwin-universal.tar.gz claw-remove README.md LICENSE
+          shasum -a 256 claw-remove-${VERSION}-darwin-universal.tar.gz > checksums-macos.txt
+
       - name: Create DMG
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
@@ -76,7 +161,49 @@ jobs:
             -srcfolder dmg-temp -ov -format UDZO \
             claw-remove-${VERSION}-macOS.dmg
 
-      - name: Upload DMG
+      - name: Upload artifacts
         uses: softprops/action-gh-release@v1
         with:
-          files: claw-remove-*.dmg
+          files: |
+            claw-remove-*.tar.gz
+            claw-remove-*.dmg
+            checksums-macos.txt
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build Windows binaries
+        run: |
+          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
+          # x64
+          $env:GOOS='windows'; $env:GOARCH='amd64'; $env:CGO_ENABLED='0'
+          go build -trimpath -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=$VERSION" -o claw-remove-x64.exe ./cmd/claw-remove
+          # ARM64
+          $env:GOARCH='arm64'
+          go build -trimpath -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=$VERSION" -o claw-remove-arm64.exe ./cmd/claw-remove
+          # x86
+          $env:GOARCH='386'
+          go build -trimpath -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=$VERSION" -o claw-remove-x86.exe ./cmd/claw-remove
+
+      - name: Create ZIP archives
+        run: |
+          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
+          Compress-Archive -Path claw-remove-x64.exe, README.md, LICENSE -DestinationPath claw-remove-$VERSION-windows-amd64.zip
+          Compress-Archive -Path claw-remove-arm64.exe, README.md, LICENSE -DestinationPath claw-remove-$VERSION-windows-arm64.zip
+          Compress-Archive -Path claw-remove-x86.exe, README.md, LICENSE -DestinationPath claw-remove-$VERSION-windows-386.zip
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            claw-remove-*-windows-*.zip

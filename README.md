@@ -434,17 +434,15 @@ go test ./...
 go build -o dist/claw-remove ./cmd/claw-remove
 ```
 
-### Release (GoReleaser)
+### Release
 
 ```bash
-# Install GoReleaser
+# Build all platforms
+./scripts/build.sh
+
+# Or use GoReleaser (optional)
 go install github.com/goreleaser/goreleaser/v2@latest
-
-# Local snapshot build
 goreleaser build --snapshot --clean
-
-# Full release (requires tag)
-goreleaser release --clean
 ```
 
 ### Release Artifacts
