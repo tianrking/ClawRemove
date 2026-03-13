@@ -29,7 +29,17 @@ func NewEngine(runner system.Runner, advisor llm.Advisor, host platform.Host) En
 	return Engine{runner: runner, advisor: advisor, host: host}
 }
 
+// StreamFunc is an alias for the llm.StreamFunc type for convenience.
+type StreamFunc = llm.StreamFunc
+
+// NilStreamFunc is a no-op streaming function.
+var NilStreamFunc = llm.NilStreamFunc
+
 func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, error) {
+	return e.RunWithStream(ctx, options, NilStreamFunc)
+}
+
+func (e Engine) RunWithStream(ctx context.Context, options model.Options, stream StreamFunc) (model.Report, error) {
 	provider, err := products.Resolve(options.Product)
 	if err != nil {
 		return model.Report{}, err
@@ -63,7 +73,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 
 	var advice *model.Advice
 	if options.AI || options.Command == "explain" {
-		assessed := e.advisor.Assess(ctx, model.Report{
+		assessed := e.advisor.AssessWithStream(ctx, model.Report{
 			OK:        ok,
 			Product:   provider.ID(),
 			Command:   options.Command,
@@ -81,7 +91,7 @@ func (e Engine) Run(ctx context.Context, options model.Options) (model.Report, e
 			Verify:       verification,
 			Plan:         executionPlan,
 			Results:      results,
-		}, provider.Skills())
+		}, provider.Skills(), stream)
 		advice = &assessed
 	}
 

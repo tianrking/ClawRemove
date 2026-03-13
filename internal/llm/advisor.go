@@ -3,13 +3,28 @@ package llm
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/skills"
 )
 
+// StreamFunc is a callback for streaming AI progress output.
+type StreamFunc func(format string, args ...any)
+
+// NilStreamFunc is a no-op streaming function.
+func NilStreamFunc(format string, args ...any) {}
+
+// WriterStreamFunc returns a StreamFunc that writes to an io.Writer.
+func WriterStreamFunc(w io.Writer) StreamFunc {
+	return func(format string, args ...any) {
+		fmt.Fprintf(w, format+"\n", args...)
+	}
+}
+
 type Advisor interface {
 	Assess(context.Context, model.Report, []skills.Skill) model.Advice
+	AssessWithStream(context.Context, model.Report, []skills.Skill, StreamFunc) model.Advice
 }
 
 type NoopAdvisor struct{}
@@ -19,6 +34,10 @@ func NewNoopAdvisor() NoopAdvisor {
 }
 
 func (NoopAdvisor) Assess(_ context.Context, report model.Report, _ []skills.Skill) model.Advice {
+	return NoopAdvisor{}.AssessWithStream(nil, report, nil, NilStreamFunc)
+}
+
+func (NoopAdvisor) AssessWithStream(_ context.Context, report model.Report, _ []skills.Skill, _ StreamFunc) model.Advice {
 	advice := model.Advice{
 		Mode:            "controlled",
 		Authority:       "advisory-only",

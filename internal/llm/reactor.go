@@ -64,9 +64,17 @@ func toProviderDrivers(drivers []Driver) []llmproviders.DriverConfig {
 }
 
 func (a controlledAdvisor) Assess(ctx context.Context, report model.Report, skills []skills.Skill) model.Advice {
-	base := NewNoopAdvisor().Assess(ctx, report, skills)
+	return a.AssessWithStream(ctx, report, skills, NilStreamFunc)
+}
+
+func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Report, skills []skills.Skill, stream StreamFunc) model.Advice {
+	base := NewNoopAdvisor().AssessWithStream(ctx, report, skills, stream)
 	base.Mode = "react-controlled"
 	base.UserMessage = "Controlled advisor is enabled. Review its recommendations as guidance, not as execution authority."
+
+	stream("🤖 AI Analysis Starting...")
+	stream("   Provider: %s", report.Product)
+	stream("   Command: %s", report.Command)
 
 	systemPrompt := prompts.ControlledSystemPrompt()
 	messages := []llmproviders.Message{
@@ -80,12 +88,16 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report, skil
 	}
 
 	for step := 0; step < a.config.MaxSteps; step++ {
+		stream("", "")
+		stream("🔄 ReAct Step %d/%d...", step+1, a.config.MaxSteps)
+
 		var (
 			content string
 			err     error
 		)
 		if traceClient, ok := a.client.(llmproviders.TraceClient); ok {
 			var trace llmproviders.Trace
+			stream("   📤 Calling LLM...", "")
 			content, trace, err = traceClient.CompleteJSONWithTrace(ctx, systemPrompt, messages)
 			if a.config.Trace && len(trace.Attempts) > 0 {
 				base.Trace = append(base.Trace, "llm-attempts["+itoa(step)+"]="+strings.Join(trace.Attempts, " -> "))
@@ -94,40 +106,65 @@ func (a controlledAdvisor) Assess(ctx context.Context, report model.Report, skil
 				base.Trace = append(base.Trace, "llm-selected["+itoa(step)+"]="+trace.Selected)
 			}
 		} else {
+			stream("   📤 Calling LLM...", "")
 			content, err = a.client.CompleteJSON(ctx, systemPrompt, messages)
 		}
 		if err != nil {
+			stream("   ❌ LLM error: %s", err.Error())
 			base.RiskNotes = append(base.RiskNotes, "LLM advisor fallback: "+err.Error())
 			return base
 		}
 
 		var next reactorStep
 		if err := json.Unmarshal([]byte(content), &next); err != nil {
+			stream("   ❌ Invalid JSON response", "")
 			base.RiskNotes = append(base.RiskNotes, "LLM advisor returned invalid JSON; deterministic fallback was used.")
 			return base
 		}
 
+		if next.ThoughtSummary != "" {
+			stream("   💭 Thought: %s", truncateText(next.ThoughtSummary, 100))
+		}
+
 		switch strings.ToLower(next.Kind) {
 		case "tool":
+			stream("   🔧 Using tool: %s", next.Tool)
 			toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, next.Tool, next.Input)
 			if toolErr != nil {
+				stream("   ❌ Tool error: %s", toolErr.Error())
 				base.RiskNotes = append(base.RiskNotes, "LLM requested invalid tool input; deterministic fallback was used.")
 				return base
 			}
+			stream("   ✅ Tool result received", "")
 			messages = append(messages,
 				llmproviders.Message{Role: "assistant", Content: content},
 				llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool result for %s:\n%s", next.Tool, mustJSON(toolResult))},
 			)
 		case "final":
+			stream("", "")
+			stream("✅ AI Analysis Complete!", "")
+			if next.UserMessage != "" {
+				stream("   📝 Summary: %s", truncateText(next.UserMessage, 150))
+			}
 			return mergeAdvice(base, next)
 		default:
+			stream("   ⚠️ Unknown response kind: %s", next.Kind)
 			base.RiskNotes = append(base.RiskNotes, "LLM advisor returned an unsupported response kind; deterministic fallback was used.")
 			return base
 		}
 	}
 
+	stream("", "")
+	stream("⚠️ Max reasoning steps reached", "")
 	base.RiskNotes = append(base.RiskNotes, "LLM advisor reached the maximum number of controlled reasoning steps.")
 	return base
+}
+
+func truncateText(text string, maxLen int) string {
+	if len(text) <= maxLen {
+		return text
+	}
+	return text[:maxLen-3] + "..."
 }
 
 func reportContext(report model.Report) map[string]any {

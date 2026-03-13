@@ -70,13 +70,26 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	runner := system.NewRunner()
 	host := platform.Detect()
 	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, provider.Tools()), host)
+
+	// Create streaming function - only stream to stdout if not in JSON mode
+	streamFunc := core.NilStreamFunc
+	if !options.JSON && !options.Quiet {
+		streamFunc = func(format string, args ...any) {
+			if format == "" {
+				fmt.Fprintln(stdout)
+			} else {
+				fmt.Fprintf(stdout, format+"\n", args...)
+			}
+		}
+	}
+
 	if options.Command == "apply" && !options.DryRun && !options.Yes {
 		if options.JSON {
 			return 2, errors.New("interactive apply requires a TTY-style confirmation; rerun without --json or use --yes after reviewing plan")
 		}
 		preview := options
 		preview.DryRun = true
-		report, err := engine.Run(ctx, preview)
+		report, err := engine.RunWithStream(ctx, preview, streamFunc)
 		if err != nil {
 			return 1, err
 		}
@@ -91,7 +104,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			return 1, errors.New("apply cancelled by user")
 		}
 	}
-	report, err := engine.Run(ctx, options)
+	report, err := engine.RunWithStream(ctx, options, streamFunc)
 	if err != nil {
 		return 1, err
 	}
