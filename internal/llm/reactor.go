@@ -91,7 +91,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 	stepCount := 0
 	for step := 0; step < a.config.MaxSteps; step++ {
 		stepCount++
-		stream("", "")
+		stream("")
 		stream("🔄 ReAct Step %d...", step+1)
 
 		var (
@@ -100,7 +100,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 		)
 		if traceClient, ok := a.client.(llmproviders.TraceClient); ok {
 			var trace llmproviders.Trace
-			stream("   📤 Calling LLM...", "")
+			stream("   📤 Calling LLM...")
 			content, trace, err = traceClient.CompleteJSONWithTrace(ctx, systemPrompt, messages)
 			if a.config.Trace && len(trace.Attempts) > 0 {
 				base.Trace = append(base.Trace, "llm-attempts["+itoa(step)+"]="+strings.Join(trace.Attempts, " -> "))
@@ -109,7 +109,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 				base.Trace = append(base.Trace, "llm-selected["+itoa(step)+"]="+trace.Selected)
 			}
 		} else {
-			stream("   📤 Calling LLM...", "")
+			stream("   📤 Calling LLM...")
 			content, err = a.client.CompleteJSON(ctx, systemPrompt, messages)
 		}
 		if err != nil {
@@ -120,7 +120,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 
 		var next reactorStep
 		if err := json.Unmarshal([]byte(content), &next); err != nil {
-			stream("   ❌ Invalid JSON response", "")
+			stream("   ❌ Invalid JSON response")
 			base.RiskNotes = append(base.RiskNotes, "LLM advisor returned invalid JSON; deterministic fallback was used.")
 			return base
 		}
@@ -134,17 +134,21 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 			stream("   🔧 Using tool: %s", next.Tool)
 			toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, next.Tool, next.Input)
 			if toolErr != nil {
-				stream("   ❌ Tool error: %s", toolErr.Error())
-				base.RiskNotes = append(base.RiskNotes, "LLM requested invalid tool input; deterministic fallback was used.")
-				return base
+				// Instead of crashing, feed error back to AI and let it continue
+				stream("   ⚠️ Tool error: %s", toolErr.Error())
+				messages = append(messages,
+					llmproviders.Message{Role: "assistant", Content: content},
+					llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool '%s' failed: %s\nPlease try a different approach or return 'final' if you have enough information.", next.Tool, toolErr.Error())},
+				)
+				continue
 			}
-			stream("   ✅ Tool result received", "")
+			stream("   ✅ Tool result received")
 			messages = append(messages,
 				llmproviders.Message{Role: "assistant", Content: content},
 				llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool result for %s:\n%s", next.Tool, mustJSON(toolResult))},
 			)
 		case "final":
-			stream("", "")
+			stream("")
 			stream("✅ AI Analysis Complete! (took %d steps)", stepCount)
 			if next.UserMessage != "" {
 				stream("   📝 Summary: %s", truncateText(next.UserMessage, 150))
@@ -157,7 +161,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 		}
 	}
 
-	stream("", "")
+	stream("")
 	stream("⚠️ Reached safety limit of %d steps", a.config.MaxSteps)
 	base.RiskNotes = append(base.RiskNotes, "LLM advisor reached the maximum number of controlled reasoning steps.")
 	return base
