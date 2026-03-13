@@ -28,6 +28,13 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		fmt.Fprintln(stdout, "claw-remove version", Version)
 		return 0, nil
 	}
+
+	// Show help if no command or help requested
+	if options.Command == "help" {
+		fmt.Fprintln(stdout, usage)
+		return 0, nil
+	}
+
 	if options.Command == "products" {
 		var facts []model.ProductFacts
 		for _, p := range products.Registry() {
@@ -97,10 +104,60 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	return 0, nil
 }
 
+const usage = `claw-remove - Agent Environment Inspector
+
+USAGE:
+    claw-remove <command> [options]
+
+COMMANDS:
+    environment    Full environment inspection report
+    inventory      AI runtime and agent inventory
+    security       AI tool security audit
+    hygiene        AI storage usage analysis
+    products       List supported product providers
+    audit          Discover residuals for a product
+    plan           Generate deletion plan (dry-run)
+    apply          Execute cleanup actions
+    verify         Verify cleanup results
+    explain        Explain findings with AI analysis
+
+OPTIONS:
+    --product <id>     Product provider (default: openclaw)
+    --dry-run          Report actions without executing
+    --yes              Skip interactive confirmation
+    --json             JSON output
+    --ai               Include AI advisory analysis
+    --audit            Audit only, no removal
+    --keep-cli         Keep CLI packages
+    --keep-app         Keep app bundles
+    --keep-workspace   Keep workspace directories
+    --keep-shell       Keep shell integration
+    --kill-processes   Terminate matching processes
+    --remove-docker    Remove docker/podman artifacts
+    --version          Print version
+    --help, -h        Show this help
+
+EXAMPLES:
+    claw-remove environment
+    claw-remove audit --product openclaw
+    claw-remove plan --product openclaw
+    claw-remove apply --product openclaw --dry-run
+    claw-remove apply --product openclaw --yes
+
+Run 'claw-remove <command> --help' for command details.`
+
 func parseOptions(args []string) (model.Options, error) {
 	var opts model.Options
-	opts.Command = "apply"
+	opts.Command = "help"
 	opts.Product = "openclaw"
+
+	// Handle help flags anywhere
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" || arg == "help" {
+			return opts, nil
+		}
+	}
+
 	if len(args) > 0 {
 		switch args[0] {
 		case "products":
