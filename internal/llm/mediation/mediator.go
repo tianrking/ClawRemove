@@ -75,6 +75,16 @@ func (m Mediator) ExecuteTool(ctx context.Context, report model.Report, tool str
 		}, nil
 	case "plan_actions":
 		return sliceResult("planActions", report.Plan.Actions, limit), nil
+	case "deep_analysis":
+		return m.deepAnalysis(report), nil
+	case "registry_probe":
+		return m.registryProbe(report, input)
+	case "env_probe":
+		return m.envProbe(report, input)
+	case "hosts_probe":
+		return m.hostsProbe(report, input)
+	case "autostart_probe":
+		return m.autostartProbe(report, input)
 	case "path_probe":
 		return m.pathProbe(report, input)
 	case "shell_profile_probe":
@@ -231,6 +241,279 @@ func (m Mediator) processProbe(report model.Report, input map[string]any) (any, 
 		return result, nil
 	}
 	return nil, fmt.Errorf("process target is not present in the report")
+}
+
+// deepAnalysis provides a comprehensive overview of all discovered artifacts
+func (m Mediator) deepAnalysis(report model.Report) map[string]any {
+	result := map[string]any{
+		"product": report.Product,
+		"platform": report.Host.OS,
+		"summary": map[string]int{
+			"stateDirs":       len(report.Discovery.StateDirs),
+			"workspaceDirs":   len(report.Discovery.WorkspaceDirs),
+			"services":        len(report.Discovery.Services),
+			"packages":        len(report.Discovery.Packages),
+			"processes":       len(report.Discovery.Processes),
+			"containers":      len(report.Discovery.Containers),
+			"registryKeys":    len(report.Discovery.RegistryKeys),
+			"envVars":         len(report.Discovery.EnvVars),
+			"hostsEntries":    len(report.Discovery.HostsEntries),
+			"shellProfiles":   len(report.Discovery.ShellProfiles),
+			"crontabLines":    len(report.Discovery.CrontabLines),
+			"confirmed":       len(report.Verify.Confirmed),
+			"investigate":     len(report.Verify.Investigate),
+		},
+	}
+
+	// Categorize findings by modification type
+	modifications := map[string][]string{
+		"filesystem":   {},
+		"services":     {},
+		"environment":  {},
+		"network":      {},
+		"autostart":    {},
+	}
+
+	// Analyze state directories
+	for _, dir := range report.Discovery.StateDirs {
+		modifications["filesystem"] = append(modifications["filesystem"], dir)
+	}
+
+	// Analyze services
+	for _, svc := range report.Discovery.Services {
+		modifications["services"] = append(modifications["services"], svc.Name)
+		if svc.Scope == "system" || svc.Scope == "user" {
+			modifications["autostart"] = append(modifications["autostart"], svc.Name+" ("+svc.Platform+")")
+		}
+	}
+
+	// Analyze environment variables
+	for _, env := range report.Discovery.EnvVars {
+		modifications["environment"] = append(modifications["environment"], env.Name+"="+env.Value)
+	}
+
+	// Analyze hosts entries
+	for _, entry := range report.Discovery.HostsEntries {
+		modifications["network"] = append(modifications["network"], entry)
+	}
+
+	// Analyze crontab
+	for _, line := range report.Discovery.CrontabLines {
+		modifications["autostart"] = append(modifications["autostart"], "cron: "+line)
+	}
+
+	// Analyze registry keys (Windows)
+	for _, reg := range report.Discovery.RegistryKeys {
+		modifications["autostart"] = append(modifications["autostart"], reg.RootKey+"\\"+reg.Path)
+	}
+
+	result["modifications"] = modifications
+	result["analysisNotes"] = []string{
+		"Review filesystem modifications for agent configuration and data",
+		"Check services for auto-start persistence mechanisms",
+		"Examine environment variables for PATH or config modifications",
+		"Verify hosts entries for any agent-added domain mappings",
+		"Inspect registry keys (Windows) for startup entries",
+	}
+
+	return result
+}
+
+// registryProbe analyzes Windows registry entries discovered
+func (m Mediator) registryProbe(report model.Report, input map[string]any) (any, error) {
+	if report.Host.OS != "windows" {
+		return map[string]any{"error": "registry probe is only available on Windows", "entries": []any{}}, nil
+	}
+
+	limit := 20
+	if raw, ok := input["limit"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			if v > 0 && int(v) < 100 {
+				limit = int(v)
+			}
+		case int:
+			if v > 0 && v < 100 {
+				limit = v
+			}
+		}
+	}
+
+	entries := truncateSlice(report.Discovery.RegistryKeys, limit)
+	result := map[string]any{
+		"platform": "windows",
+		"count":    len(report.Discovery.RegistryKeys),
+		"entries":  entries,
+		"analysis": []string{},
+	}
+
+	// Analyze registry entries for agent modifications
+	var analysis []string
+	for _, reg := range entries {
+		// Check for common auto-start locations
+		if strings.Contains(reg.Path, "Run") || strings.Contains(reg.Path, "RunOnce") {
+			analysis = append(analysis, fmt.Sprintf("Auto-start entry: %s\\%s", reg.RootKey, reg.Path))
+		}
+		// Check for uninstall entries
+		if strings.Contains(reg.Path, "Uninstall") {
+			analysis = append(analysis, fmt.Sprintf("Uninstall entry: %s\\%s", reg.RootKey, reg.Path))
+		}
+		// Check for app-specific entries
+		if reg.Data != "" {
+			analysis = append(analysis, fmt.Sprintf("Data entry at %s\\%s: %s", reg.RootKey, reg.Path, reg.Data))
+		}
+	}
+	result["analysis"] = analysis
+
+	return result, nil
+}
+
+// envProbe analyzes environment variables discovered
+func (m Mediator) envProbe(report model.Report, input map[string]any) (any, error) {
+	limit := 20
+	if raw, ok := input["limit"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			if v > 0 && int(v) < 100 {
+				limit = int(v)
+			}
+		case int:
+			if v > 0 && v < 100 {
+				limit = v
+			}
+		}
+	}
+
+	entries := truncateSlice(report.Discovery.EnvVars, limit)
+	result := map[string]any{
+		"count":   len(report.Discovery.EnvVars),
+		"entries": entries,
+		"analysis": []string{},
+	}
+
+	// Analyze environment variables for agent modifications
+	var analysis []string
+	for _, env := range entries {
+		name := strings.ToUpper(env.Name)
+		// Check for PATH modifications
+		if strings.Contains(name, "PATH") {
+			analysis = append(analysis, fmt.Sprintf("PATH modification: %s", env.Name))
+		}
+		// Check for agent-specific variables
+		if strings.Contains(name, "OPENCLAW") || strings.Contains(name, "CLAW") ||
+		   strings.Contains(name, "AGENT") || strings.Contains(name, "BOT") {
+			analysis = append(analysis, fmt.Sprintf("Agent-specific variable: %s=%s", env.Name, env.Value))
+		}
+		// Check for API keys or secrets
+		if strings.Contains(name, "API_KEY") || strings.Contains(name, "TOKEN") ||
+		   strings.Contains(name, "SECRET") {
+			analysis = append(analysis, fmt.Sprintf("Potential secret in env: %s", env.Name))
+		}
+	}
+	result["analysis"] = analysis
+
+	return result, nil
+}
+
+// hostsProbe analyzes hosts file entries discovered
+func (m Mediator) hostsProbe(report model.Report, input map[string]any) (any, error) {
+	limit := 20
+	if raw, ok := input["limit"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			if v > 0 && int(v) < 100 {
+				limit = int(v)
+			}
+		case int:
+			if v > 0 && v < 100 {
+				limit = v
+			}
+		}
+	}
+
+	entries := truncateSlice(report.Discovery.HostsEntries, limit)
+	result := map[string]any{
+		"count":   len(report.Discovery.HostsEntries),
+		"entries": entries,
+		"analysis": []string{},
+	}
+
+	// Analyze hosts entries for agent modifications
+	var analysis []string
+	for _, entry := range entries {
+		// Check for localhost redirects
+		if strings.HasPrefix(entry, "127.0.0.1") || strings.HasPrefix(entry, "::1") {
+			analysis = append(analysis, fmt.Sprintf("Localhost redirect: %s", entry))
+		}
+		// Check for API endpoint modifications
+		if strings.Contains(entry, "api.") || strings.Contains(entry, "openai") ||
+		   strings.Contains(entry, "anthropic") {
+			analysis = append(analysis, fmt.Sprintf("API endpoint modification: %s", entry))
+		}
+	}
+	result["analysis"] = analysis
+
+	return result, nil
+}
+
+// autostartProbe analyzes all auto-start mechanisms discovered
+func (m Mediator) autostartProbe(report model.Report, input map[string]any) (any, error) {
+	result := map[string]any{
+		"services":   []map[string]any{},
+		"crontab":    report.Discovery.CrontabLines,
+		"registry":   []map[string]any{},
+		"launchd":    []map[string]any{},
+		"systemd":    []map[string]any{},
+		"analysis":   []string{},
+	}
+
+	// Analyze services by platform
+	for _, svc := range report.Discovery.Services {
+		svcInfo := map[string]any{
+			"name":    svc.Name,
+			"scope":   svc.Scope,
+			"path":    svc.Path,
+		}
+		switch svc.Platform {
+		case "launchd":
+			result["launchd"] = append(result["launchd"].([]map[string]any), svcInfo)
+		case "systemd":
+			result["systemd"] = append(result["systemd"].([]map[string]any), svcInfo)
+		default:
+			result["services"] = append(result["services"].([]map[string]any), svcInfo)
+		}
+	}
+
+	// Add Windows registry auto-start entries
+	if report.Host.OS == "windows" {
+		for _, reg := range report.Discovery.RegistryKeys {
+			if strings.Contains(reg.Path, "Run") || strings.Contains(reg.Path, "RunOnce") {
+				result["registry"] = append(result["registry"].([]map[string]any), map[string]any{
+					"root": reg.RootKey,
+					"path": reg.Path,
+					"data": reg.Data,
+				})
+			}
+		}
+	}
+
+	// Generate analysis
+	var analysis []string
+	if len(result["launchd"].([]map[string]any)) > 0 {
+		analysis = append(analysis, "macOS launchd services detected - check for agent auto-start")
+	}
+	if len(result["systemd"].([]map[string]any)) > 0 {
+		analysis = append(analysis, "Linux systemd services detected - check for agent auto-start")
+	}
+	if len(result["registry"].([]map[string]any)) > 0 {
+		analysis = append(analysis, "Windows registry auto-start entries detected")
+	}
+	if len(report.Discovery.CrontabLines) > 0 {
+		analysis = append(analysis, "Crontab entries detected - check for scheduled agent tasks")
+	}
+	result["analysis"] = analysis
+
+	return result, nil
 }
 
 func sliceResult[T any](key string, items []T, limit int) map[string]any {
