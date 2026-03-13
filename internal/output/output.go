@@ -37,6 +37,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 				line += fmt.Sprintf(" port:%d", rt.Port)
 			}
 			lines = append(lines, line)
+			if rt.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", rt.Path))
+			}
 		}
 	}
 
@@ -46,6 +49,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 			"AI Tools")
 		for _, app := range report.Agents.Applications {
 			lines = append(lines, fmt.Sprintf("  - %s", app.Name))
+			if app.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", app.Path))
+			}
 		}
 	}
 
@@ -55,6 +61,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 			"Models")
 		for _, m := range report.Artifacts.Models {
 			lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
+			if m.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", m.Path))
+			}
 		}
 	}
 
@@ -64,6 +73,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 			"Caches")
 		for _, c := range report.Artifacts.Caches {
 			lines = append(lines, fmt.Sprintf("  - %s: %s", c.Name, formatSize(c.Size)))
+			if c.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", c.Path))
+			}
 		}
 	}
 
@@ -77,6 +89,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 				status = fmt.Sprintf(": %s", formatSize(v.Size))
 			}
 			lines = append(lines, fmt.Sprintf("  - %s%s", v.Name, status))
+			if v.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", v.Path))
+			}
 		}
 	}
 
@@ -144,6 +159,9 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 				status = "running"
 			}
 			lines = append(lines, fmt.Sprintf("  - %s (%s)", rt.Name, status))
+			if rt.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", rt.Path))
+			}
 		}
 	}
 
@@ -153,6 +171,9 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 			"AI Tools")
 		for _, app := range report.Agents.Applications {
 			lines = append(lines, fmt.Sprintf("  - %s", app.Name))
+			if app.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", app.Path))
+			}
 		}
 	}
 
@@ -171,9 +192,15 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 			"Artifacts")
 		for _, m := range report.Artifacts.Models {
 			lines = append(lines, fmt.Sprintf("  - %s: %s", m.Name, formatSize(m.Size)))
+			if m.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", m.Path))
+			}
 		}
 		for _, c := range report.Artifacts.Caches {
 			lines = append(lines, fmt.Sprintf("  - %s: %s", c.Name, formatSize(c.Size)))
+			if c.Path != "" {
+				lines = append(lines, fmt.Sprintf("      %s", c.Path))
+			}
 		}
 	}
 
