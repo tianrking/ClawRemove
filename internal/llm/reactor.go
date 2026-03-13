@@ -75,6 +75,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 	stream("🤖 AI Analysis Starting...")
 	stream("   Provider: %s", report.Product)
 	stream("   Command: %s", report.Command)
+	stream("   Mode: Intelligent ReAct (AI decides when complete)")
 
 	systemPrompt := prompts.ControlledSystemPrompt()
 	messages := []llmproviders.Message{
@@ -87,9 +88,11 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 		},
 	}
 
+	stepCount := 0
 	for step := 0; step < a.config.MaxSteps; step++ {
+		stepCount++
 		stream("", "")
-		stream("🔄 ReAct Step %d/%d...", step+1, a.config.MaxSteps)
+		stream("🔄 ReAct Step %d...", step+1)
 
 		var (
 			content string
@@ -142,7 +145,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 			)
 		case "final":
 			stream("", "")
-			stream("✅ AI Analysis Complete!", "")
+			stream("✅ AI Analysis Complete! (took %d steps)", stepCount)
 			if next.UserMessage != "" {
 				stream("   📝 Summary: %s", truncateText(next.UserMessage, 150))
 			}
@@ -155,7 +158,7 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 	}
 
 	stream("", "")
-	stream("⚠️ Max reasoning steps reached", "")
+	stream("⚠️ Reached safety limit of %d steps", a.config.MaxSteps)
 	base.RiskNotes = append(base.RiskNotes, "LLM advisor reached the maximum number of controlled reasoning steps.")
 	return base
 }

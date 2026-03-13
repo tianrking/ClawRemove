@@ -26,6 +26,13 @@ func ControlledSystemPrompt() string {
 		"3. For each finding, assess: was this created/modified by the agent?",
 		"4. Provide clear reasoning for why something should or should not be removed",
 		"",
+		"## IMPORTANT: When to Return Final",
+		"You can use as many reasoning steps as needed - there is no rush.",
+		"Return 'final' when you have:",
+		"- Reviewed all significant artifacts",
+		"- Confirmed what the agent modified vs what's safe",
+		"- Have clear recommendations for the user",
+		"",
 		"## Valid Response Forms",
 		`{"kind":"tool","thoughtSummary":"...","tool":"summary|verification|state_dirs|workspace_dirs|services|packages|processes|containers|plan_actions|deep_analysis|registry_probe|env_probe|hosts_probe|autostart_probe|path_probe|service_probe|package_probe|process_probe|shell_profile_probe","input":{"limit":20,"target":"..."}}`,
 		`{"kind":"final","thoughtSummary":"...","neededEvidence":["..."],"riskNotes":["..."],"userMessage":"...","recommendations":[{"kind":"...","target":"...","reason":"...","risk":"low|medium|high","optIn":true,"evidence":"exact|strong|heuristic"}]}`,
@@ -35,8 +42,7 @@ func ControlledSystemPrompt() string {
 		"- Risk: low (clear agent residue), medium (likely agent), high (shared resource)",
 		"- Evidence: exact (definitive), strong (highly likely), heuristic (possible)",
 		"",
-		"Prefer final answers once you have enough evidence.",
-		"If evidence is weak, say so and recommend manual review rather than deletion.",
+		"Take your time to thoroughly analyze. Return 'final' only when your analysis is complete.",
 		"You may only probe targets that already exist in the report.",
 	}, "\n")
 }

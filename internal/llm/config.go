@@ -28,7 +28,7 @@ func LoadConfigFromEnv() Config {
 	providers := parseProviders(envOr("CLAWREMOVE_LLM_PROVIDERS", envOr("CLAWREMOVE_LLM_PROVIDER", "openai")))
 	cfg := Config{
 		MaxTokens: envOrInt("CLAWREMOVE_LLM_MAX_TOKENS", 1200),
-		MaxSteps:  envOrInt("CLAWREMOVE_LLM_MAX_STEPS", 4),
+		MaxSteps:  envOrInt("CLAWREMOVE_LLM_MAX_STEPS", 20), // Allow AI to reason until complete
 		Trace:     envOrBool("CLAWREMOVE_LLM_TRACE", false),
 		Timeout:   time.Duration(envOrInt("CLAWREMOVE_LLM_TIMEOUT_SECONDS", 45)) * time.Second,
 		UserAgent: envOr("CLAWREMOVE_LLM_USER_AGENT", "ClawRemove/0"),
