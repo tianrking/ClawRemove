@@ -154,6 +154,40 @@ claw-remove explain --product openclaw --ai
 
 # JSON 输出
 claw-remove explain --product openclaw --ai --json
+
+# 完整环境分析
+claw-remove environment --ai
+```
+
+### ReAct 深度分析
+
+启用 `--ai` 后，ClawRemove 使用 **ReAct（推理+行动）** 机制进行全面分析：
+
+**分析能力：**
+| 工具 | 平台 | 说明 |
+|------|------|------|
+| `deep_analysis` | 全平台 | 所有发现的 artifact 综合概览 |
+| `registry_probe` | Windows | 注册表启动项、卸载条目 |
+| `env_probe` | 全平台 | PATH 修改、API keys、配置变量 |
+| `hosts_probe` | 全平台 | Hosts 文件域名映射 |
+| `autostart_probe` | 全平台 | launchd、systemd、cron、注册表自启动 |
+| `shell_profile_probe` | 全平台 | Shell 别名、补全、PATH 修改 |
+
+**AI 分析内容：**
+- **文件系统**：状态目录、工作区、临时文件
+- **服务**：系统服务、后台进程
+- **环境变量**：PATH、API keys、自定义变量
+- **网络**：Hosts 条目、端口监听
+- **自启动**：launchd (macOS)、systemd (Linux)、注册表 (Windows)、cron
+
+**示例输出：**
+```
+AI Analysis Summary:
+- 发现 49 个确认残留项
+- 检测到修改：filesystem, services, autostart
+- 注册表启动项: HKCU\Software\OpenClaw
+- PATH 在 ~/.zshrc 中被修改
+- 建议: remove_confirmed_residue (风险=中等)
 ```
 
 ## 命令

@@ -294,6 +294,41 @@ claw-remove explain --product openclaw --ai
 
 # JSON output with AI
 claw-remove explain --product openclaw --ai --json
+
+# Full environment analysis with AI
+claw-remove environment --ai
+```
+
+### ReAct Deep Analysis
+
+When `--ai` is enabled, ClawRemove uses a **ReAct (Reasoning + Acting)** mechanism for comprehensive analysis:
+
+**Analysis Capabilities:**
+| Tool | Platform | Description |
+|------|----------|-------------|
+| `deep_analysis` | All | Comprehensive overview of all artifacts |
+| `registry_probe` | Windows | Registry startup entries, uninstall keys |
+| `env_probe` | All | PATH modifications, API keys, configs |
+| `hosts_probe` | All | Hosts file domain mappings |
+| `autostart_probe` | All | launchd, systemd, cron, registry auto-start |
+| `shell_profile_probe` | All | Shell aliases, completions, PATH changes |
+| `service_probe` | All | Running services status |
+
+**What the AI Analyzes:**
+- **Filesystem**: State directories, workspaces, temp files
+- **Services**: System services, background processes
+- **Environment**: PATH, API keys, custom variables
+- **Network**: Hosts entries, port listeners
+- **Autostart**: launchd (macOS), systemd (Linux), registry (Windows), cron
+
+**Example Output:**
+```
+AI Analysis Summary:
+- 49 confirmed residue items found
+- Modifications detected in: filesystem, services, autostart
+- Registry startup entry: HKCU\Software\OpenClaw
+- PATH modified in ~/.zshrc
+- Recommend: remove_confirmed_residue (risk=medium)
 ```
 
 ## Safe Removal Workflow

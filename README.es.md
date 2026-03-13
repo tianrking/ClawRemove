@@ -109,6 +109,40 @@ claw-remove audit --ai
 
 # Explicar hallazgos con asistencia IA
 claw-remove explain --ai
+
+# Análisis completo del entorno
+claw-remove environment --ai
+```
+
+### Análisis ReAct Profundo
+
+Cuando `--ai` está habilitado, ClawRemove usa un mecanismo **ReAct (Razonamiento + Acción)**:
+
+**Herramientas de Análisis:**
+| Herramienta | Plataforma | Descripción |
+|-------------|------------|-------------|
+| `deep_analysis` | Todas | Resumen completo de todos los artifacts |
+| `registry_probe` | Windows | Entradas de registro, inicio automático |
+| `env_probe` | Todas | Variables PATH, API keys, configuraciones |
+| `hosts_probe` | Todas | Mapeos de dominio en archivo hosts |
+| `autostart_probe` | Todas | launchd, systemd, cron, registro auto-inicio |
+| `shell_profile_probe` | Todas | Alias de shell, PATH, completions |
+
+**Lo que Analiza la IA:**
+- **Sistema de archivos**: Directorios de estado, workspaces, temporales
+- **Servicios**: Servicios del sistema, procesos en segundo plano
+- **Entorno**: PATH, API keys, variables personalizadas
+- **Red**: Entradas hosts, puertos en escucha
+- **Auto-inicio**: launchd (macOS), systemd (Linux), registro (Windows), cron
+
+**Ejemplo de Salida:**
+```
+AI Analysis Summary:
+- 49 elementos de residuo confirmados encontrados
+- Modificaciones detectadas en: filesystem, services, autostart
+- Entrada de registro de inicio: HKCU\Software\OpenClaw
+- PATH modificado en ~/.zshrc
+- Recomendación: remove_confirmed_residue (riesgo=medio)
 ```
 
 ## Comandos
