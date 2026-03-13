@@ -105,10 +105,10 @@ ClawRemove puede usar IA para explicar hallazgos en lenguaje sencillo. Esto es *
 
 ```bash
 # Auditoría mejorada con análisis IA
-clawremove audit --ai
+claw-remove audit --ai
 
 # Explicar hallazgos con asistencia IA
-clawremove explain --ai
+claw-remove explain --ai
 ```
 
 ## Comandos
