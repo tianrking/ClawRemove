@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-linux:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,21 +25,83 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm libarchive-tools fakeroot dpkg-dev file
+          sudo apt-get install -y rpm libarchive-tools fakeroot dpkg-dev file zip
 
-      - name: Build binaries
-        run: ./scripts/build.sh
+      - name: Build all platforms
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          DIST_DIR="${PWD}/dist"
+          mkdir -p "${DIST_DIR}"
+          > "${DIST_DIR}/sha256sums.txt"
+
+          targets=(
+            # macOS
+            "darwin amd64"
+            "darwin arm64"
+            # Linux
+            "linux amd64"
+            "linux arm64"
+            "linux 386"
+            "linux arm"
+            "linux riscv64"
+            "linux ppc64le"
+            "linux s390x"
+            "linux mips64"
+            "linux mips64le"
+            # Windows
+            "windows amd64"
+            "windows arm64"
+            "windows 386"
+            # FreeBSD
+            "freebsd amd64"
+            "freebsd arm64"
+            # NetBSD
+            "netbsd amd64"
+            # OpenBSD
+            "openbsd amd64"
+          )
+
+          for target in "${targets[@]}"; do
+            goos="${target%% *}"
+            goarch="${target##* }"
+            suffix=""
+            archive_ext=".tar.gz"
+            if [[ "${goos}" == "windows" ]]; then
+              suffix=".exe"
+              archive_ext=".zip"
+            fi
+
+            binary_name="claw-remove-${goos}-${goarch}${suffix}"
+            echo "==> Building ${goos}/${goarch}"
+            GOOS="${goos}" GOARCH="${goarch}" CGO_ENABLED=0 \
+              go build -trimpath -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=${VERSION}" \
+              -o "${DIST_DIR}/${binary_name}" ./cmd/claw-remove
+
+            echo "==> Packaging ${goos}/${goarch}"
+            archive_name="claw-remove-${goos}-${goarch}${archive_ext}"
+            cd "${DIST_DIR}"
+            if [[ "${goos}" == "windows" ]]; then
+              zip -q "${archive_name}" "${binary_name}"
+            else
+              tar -czf "${archive_name}" "${binary_name}"
+            fi
+            shasum -a 256 "${archive_name}" >> sha256sums.txt
+            cd - > /dev/null
+          done
+
+          echo "==> Release artifacts generated in ${DIST_DIR}"
+          ls -la "${DIST_DIR}"
 
       - name: Create deb package
         run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
           mkdir -p pkg-deb/usr/bin
           cp dist/claw-remove-linux-amd64 pkg-deb/usr/bin/claw-remove
           chmod 755 pkg-deb/usr/bin/claw-remove
           mkdir -p pkg-deb/DEBIAN
           cat > pkg-deb/DEBIAN/control << EOF
           Package: claw-remove
-          Version: ${VERSION#v}
+          Version: ${VERSION}
           Section: utils
           Priority: optional
           Architecture: amd64
@@ -47,7 +109,7 @@ jobs:
           Description: Agent Environment Inspector
            Inspect, audit and clean environments where AI agents run.
           EOF
-          dpkg-deb -b pkg-deb claw-remove_${VERSION#v}_amd64.deb
+          dpkg-deb -b pkg-deb dist/claw-remove_${VERSION}_amd64.deb
 
       - name: Create rpm package
         run: |
@@ -65,11 +127,10 @@ jobs:
           Inspect, audit and clean environments where AI agents run.
 
           %prep
-          # nothing
 
           %install
           mkdir -p %{buildroot}/usr/bin
-          cp dist/claw-remove-linux-amd64 %{buildroot}/usr/bin/claw-remove
+          cp %{_sourcedir}/claw-remove %{buildroot}/usr/bin/claw-remove
           chmod 755 %{buildroot}/usr/bin/claw-remove
 
           %files
@@ -79,8 +140,9 @@ jobs:
           * $(date '+%a %b %d %Y') ClawRemove Team <noreply@github.com> - ${VERSION}-1
           - Release ${VERSION}
           EOF
-          rpmbuild --define "_topdir ${PWD}/pkg-rpm" -bb pkg-rpm/SPECS/claw-remove.spec
-          mv pkg-rpm/RPMS/x86_64/claw-remove-*.rpm .
+          cp dist/claw-remove-linux-amd64 pkg-rpm/SOURCES/claw-remove
+          rpmbuild --define "_topdir ${PWD}/pkg-rpm" --define "_sourcedir ${PWD}/pkg-rpm/SOURCES" -bb pkg-rpm/SPECS/claw-remove.spec
+          mv pkg-rpm/RPMS/x86_64/claw-remove-*.rpm dist/
 
       - name: Create AppImage
         run: |
@@ -99,23 +161,18 @@ jobs:
           # Download appimagetool
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
-          ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir claw-remove-${VERSION}-x86_64.AppImage || true
-          # Fallback if AppImage fails
-          if [ ! -f claw-remove-*.AppImage ]; then
-            tar -czf claw-remove-${VERSION}-linux-amd64-appdir.tar.gz -C AppDir .
-          fi
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir dist/claw-remove-${VERSION}-x86_64.AppImage || true
 
-      - name: Upload artifacts
+      - name: Upload Linux artifacts
         uses: softprops/action-gh-release@v1
         with:
           files: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.AppImage
             dist/sha256sums.txt
-            claw-remove*.deb
-            claw-remove*.rpm
-            claw-remove*.AppImage
-            claw-remove*-appdir.tar.gz
 
   build-macos:
     runs-on: macos-latest
@@ -161,7 +218,7 @@ jobs:
             -srcfolder dmg-temp -ov -format UDZO \
             claw-remove-${VERSION}-macOS.dmg
 
-      - name: Upload artifacts
+      - name: Upload macOS artifacts
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -202,7 +259,7 @@ jobs:
           Compress-Archive -Path claw-remove-arm64.exe, README.md, LICENSE -DestinationPath claw-remove-$VERSION-windows-arm64.zip
           Compress-Archive -Path claw-remove-x86.exe, README.md, LICENSE -DestinationPath claw-remove-$VERSION-windows-386.zip
 
-      - name: Upload artifacts
+      - name: Upload Windows artifacts
         uses: softprops/action-gh-release@v1
         with:
           files: |
