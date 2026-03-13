@@ -6,11 +6,16 @@
     <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
     <img src="https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go" alt="Go 1.25+">
+    <img src="https://img.shields.io/badge/size-%3C10MB-success" alt="Size < 10MB">
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows%20%7C%20FreeBSD%20%7C%20NetBSD%20%7C%20OpenBSD-111827" alt="Platform support">
     <a href="https://github.com/tianrking/ClawRemove/releases"><img src="https://img.shields.io/github/v/release/tianrking/ClawRemove" alt="Latest release"></a>
   </p>
   <p>English | <a href="./README.zh-CN.md">中文</a> | <a href="./README.es.md">Español</a></p>
 </div>
+
+> **🚀 One tool, under 10MB, solves all your OpenClaw-related headaches.**
+>
+> No dependencies. No installation. Just download and run.
 
 ClawRemove is an **Agent Environment Inspector** - a tool to inspect, audit, and clean environments where AI agents run.
 

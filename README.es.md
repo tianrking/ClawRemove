@@ -5,11 +5,16 @@
     <a href="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml"><img src="https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-1f6feb" alt="MIT License"></a>
     <img src="https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go" alt="Go 1.25+">
+    <img src="https://img.shields.io/badge/size-%3C10MB-success" alt="Tamaño < 10MB">
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827" alt="Platform support">
     <a href="https://github.com/tianrking/ClawRemove/releases"><img src="https://img.shields.io/github/v/release/tianrking/ClawRemove" alt="Latest release"></a>
   </p>
   <p><a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a> | Español</p>
 </div>
+
+> **🚀 Una herramienta, menos de 10MB, resuelve todos tus problemas relacionados con OpenClaw.**
+>
+> Sin dependencias. Sin instalación. Descarga y ejecuta.
 
 ClawRemove es un motor profesional y multiplataforma, escrito en Go, para eliminar productos claw.
 

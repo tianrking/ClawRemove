@@ -1,5 +1,15 @@
 # ClawRemove Development Plan
 
+## The Killer Feature
+
+> **One tool, under 10MB, solves all your OpenClaw-related headaches.**
+
+- **Zero dependencies** - Single static binary
+- **No installation** - Download and run
+- **Cross-platform** - macOS, Linux, Windows, BSD
+- **Safe by default** - Audit before any action
+- **AI-powered analysis** - Optional LLM advisory with intelligent ReAct loop
+
 ## Core Positioning
 
 **Agent Environment Inspector**

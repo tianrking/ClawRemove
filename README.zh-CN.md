@@ -5,11 +5,16 @@
     <a href=”https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml”><img src=”https://github.com/tianrking/ClawRemove/actions/workflows/ci.yml/badge.svg” alt=”CI”></a>
     <a href=”./LICENSE”><img src=”https://img.shields.io/badge/license-MIT-1f6feb” alt=”MIT License”></a>
     <img src=”https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go” alt=”Go 1.25+”>
+    <img src=”https://img.shields.io/badge/size-%3C10MB-success” alt=”体积 < 10MB”>
     <img src=”https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-111827” alt=”Platform support”>
     <a href=”https://github.com/tianrking/ClawRemove/releases”><img src=”https://img.shields.io/github/v/release/tianrking/ClawRemove” alt=”Latest release”></a>
   </p>
   <p><a href=”./README.md”>English</a> | 中文 | <a href=”./README.es.md”>Español</a></p>
 </div>
+
+> **🚀 一个工具，不到 10MB，解决一切 OpenClaw 相关烦恼。**
+>
+> 零依赖。免安装。下载即用。
 
 ClawRemove 是一个使用 Go 编写的专业跨平台 AI Agent 卸载引擎。
 
