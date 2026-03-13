@@ -62,6 +62,11 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		}
 	}
 
+	// Handle --product all to run across all registered products
+	if options.Product == "all" {
+		return runAllProducts(ctx, options, stdout, stderr)
+	}
+
 	provider, err := products.Resolve(options.Product)
 	if err != nil {
 		return 2, err
@@ -117,6 +122,75 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	return 0, nil
 }
 
+// runAllProducts executes the command across all registered products
+func runAllProducts(ctx context.Context, options model.Options, stdout io.Writer, stderr io.Writer) (int, error) {
+	registry := products.Registry()
+	if len(registry) == 0 {
+		return 2, errors.New("no products registered")
+	}
+
+	// Create streaming function
+	streamFunc := core.NilStreamFunc
+	if !options.JSON && !options.Quiet {
+		streamFunc = func(format string, args ...any) {
+			if format == "" {
+				fmt.Fprintln(stdout)
+			} else {
+				fmt.Fprintf(stdout, format+"\n", args...)
+			}
+		}
+	}
+
+	var allReports []model.Report
+	var hasErrors bool
+
+	streamFunc("🔍 Scanning all %d registered products...", len(registry))
+	streamFunc("")
+
+	for i, p := range registry {
+		productID := p.ID()
+		streamFunc("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		streamFunc("[%d/%d] %s (%s)", i+1, len(registry), p.DisplayName(), productID)
+		streamFunc("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+		// Create options for this specific product
+		productOpts := options
+		productOpts.Product = productID
+
+		runner := system.NewRunner()
+		host := platform.Detect()
+		engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, p.Tools()), host)
+
+		report, err := engine.RunWithStream(ctx, productOpts, streamFunc)
+		if err != nil {
+			streamFunc("❌ Error: %s", err.Error())
+			hasErrors = true
+			continue
+		}
+
+		if !report.OK {
+			hasErrors = true
+		}
+
+		if err := output.PrintReport(stdout, report, options.JSON); err != nil {
+			return 1, err
+		}
+
+		allReports = append(allReports, report)
+		streamFunc("")
+	}
+
+	// Print summary
+	streamFunc("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	streamFunc("📊 Summary: Scanned %d products", len(registry))
+	if hasErrors {
+		streamFunc("⚠️  Some products had issues (see above)")
+		return 1, errors.New("one or more products had issues")
+	}
+	streamFunc("✅ All products processed successfully")
+	return 0, nil
+}
+
 const usage = `claw-remove - Agent Environment Inspector
 
 USAGE:
@@ -135,7 +209,7 @@ COMMANDS:
     explain        Explain findings with AI analysis
 
 OPTIONS:
-    --product <id>     Product provider (default: openclaw)
+    --product <id>     Product provider (default: openclaw, use 'all' for all products)
     --dry-run          Report actions without executing
     --yes              Skip interactive confirmation
     --json             JSON output
