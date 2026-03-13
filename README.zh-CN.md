@@ -140,7 +140,7 @@ claw-remove explain --product openclaw --ai
 | `OPENAI_API_KEY` | OpenAI 密钥 | `sk-xxx` |
 | `ANTHROPIC_API_KEY` | Anthropic 密钥 | `sk-ant-xxx` |
 | `CLAWREMOVE_LLM_BASE_URL` | 自定义 API 地址 | `https://api.example.com/v1` |
-| `CLAWREMOVE_LLM_MODEL` | 模型覆盖 | `gpt-5.4`, `claude-sonnet-4-6` |
+| `CLAWREMOVE_LLM_MODEL` | 模型覆盖 | `GPT-5.4`, `claude-opus-4-6` |
 | `CLAWREMOVE_LLM_TIMEOUT_SECONDS` | 请求超时 | `60` |
 
 ### 带 AI 的命令
@@ -280,7 +280,7 @@ OpenAI 示例：
 ```bash
 export CLAWREMOVE_LLM_PROVIDER="openai"
 export OPENAI_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="gpt-5.4"
+export CLAWREMOVE_LLM_MODEL="GPT-5.4"
 claw-remove explain --product openclaw --ai --json
 ```
 
@@ -289,7 +289,7 @@ Anthropic 示例：
 ```bash
 export CLAWREMOVE_LLM_PROVIDER="anthropic"
 export ANTHROPIC_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="claude-sonnet-4-6-20250217"
+export CLAWREMOVE_LLM_MODEL="claude-opus-4-6-20250205"
 claw-remove explain --product openclaw --ai --json
 ```
 

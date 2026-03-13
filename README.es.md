@@ -235,7 +235,7 @@ Ejemplo con OpenAI:
 ```bash
 export CLAWREMOVE_LLM_PROVIDER="openai"
 export OPENAI_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="gpt-5.4"
+export CLAWREMOVE_LLM_MODEL="GPT-5.4"
 claw-remove explain --product openclaw --ai --json
 ```
 
@@ -244,7 +244,7 @@ Ejemplo con Anthropic:
 ```bash
 export CLAWREMOVE_LLM_PROVIDER="anthropic"
 export ANTHROPIC_API_KEY="..."
-export CLAWREMOVE_LLM_MODEL="claude-sonnet-4-6-20250217"
+export CLAWREMOVE_LLM_MODEL="claude-opus-4-6-20250205"
 claw-remove explain --product openclaw --ai --json
 ```
 

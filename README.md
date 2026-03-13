@@ -280,7 +280,7 @@ claw-remove explain --product openclaw --ai
 | `OPENAI_API_KEY` | OpenAI key (fallback) | `sk-xxx` |
 | `ANTHROPIC_API_KEY` | Anthropic key (fallback) | `sk-ant-xxx` |
 | `CLAWREMOVE_LLM_BASE_URL` | Custom API URL | `https://api.example.com/v1` |
-| `CLAWREMOVE_LLM_MODEL` | Model override | `gpt-4.1`, `claude-sonnet-4-6` |
+| `CLAWREMOVE_LLM_MODEL` | Model override | `GPT-5.4`, `claude-opus-4-6` |
 | `CLAWREMOVE_LLM_TIMEOUT_SECONDS` | Request timeout | `60` |
 
 ### Commands with AI
