@@ -211,6 +211,42 @@ AI Analysis Summary:
 - 建议: remove_confirmed_residue (风险=中等)
 ```
 
+### 实时流式输出
+
+使用 `--ai` 模式时，ClawRemove 会实时显示 AI 分析进度：
+
+```bash
+claw-remove explain --product openclaw --ai
+```
+
+**实时进度示例：**
+```
+🤖 AI Analysis Starting...
+   Provider: openclaw
+   Command: explain
+
+🔄 ReAct Step 1/10...
+   📤 Calling LLM...
+   💭 Thought: 分析发现的 artifact 中 agent 的修改...
+   🔧 Using tool: deep_analysis
+   ✅ Tool result received
+
+🔄 ReAct Step 2/10...
+   📤 Calling LLM...
+   💭 Thought: 调查 shell profile 修改...
+   🔧 Using tool: shell_profile_probe
+   ✅ Tool result received
+
+✅ AI Analysis Complete!
+   📝 Summary: 发现 49 个确认残留项。建议删除...
+```
+
+**流式输出特性：**
+- 每个 ReAct 步骤实时显示进度
+- 显示 AI 正在使用的工具
+- 展示 AI 的思考过程摘要
+- 仅在终端模式下流式输出（`--json` 或 `--quiet` 时禁用）
+
 ## 命令
 
 ### 环境检测

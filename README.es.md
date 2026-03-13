@@ -173,6 +173,42 @@ AI Analysis Summary:
 - Recomendación: remove_confirmed_residue (riesgo=medio)
 ```
 
+### Salida en Tiempo Real
+
+Cuando usas `--ai`, ClawRemove muestra el progreso del análisis en tiempo real:
+
+```bash
+claw-remove explain --product openclaw --ai
+```
+
+**Ejemplo de Progreso en Vivo:**
+```
+🤖 AI Analysis Starting...
+   Provider: openclaw
+   Command: explain
+
+🔄 ReAct Step 1/10...
+   📤 Calling LLM...
+   💭 Thought: Analizando artefactos descubiertos para modificaciones del agente...
+   🔧 Using tool: deep_analysis
+   ✅ Tool result received
+
+🔄 ReAct Step 2/10...
+   📤 Calling LLM...
+   💭 Thought: Investigando modificaciones del perfil de shell...
+   🔧 Using tool: shell_profile_probe
+   ✅ Tool result received
+
+✅ AI Analysis Complete!
+   📝 Summary: Encontrados 49 elementos de residuo confirmados. Se recomienda eliminación...
+```
+
+**Comportamiento de Streaming:**
+- Progreso mostrado en tiempo real durante cada paso ReAct
+- Muestra qué herramientas está usando la IA
+- Despliega resúmenes del proceso de pensamiento de la IA
+- Solo muestra en terminal (deshabilitado con `--json` o `--quiet`)
+
 ## Comandos
 
 ### Inspección de Entorno
