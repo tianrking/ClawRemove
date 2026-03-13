@@ -1,0 +1,162 @@
+project_name: claw-remove
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/claw-remove
+    binary: claw-remove
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/tianrking/ClawRemove/internal/app.Version={{.Version}}
+    goos:
+      - darwin
+      - linux
+      - windows
+      - freebsd
+      - netbsd
+      - openbsd
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+      - arm
+      - riscv64
+      - ppc64le
+      - s390x
+      - mips64
+      - mips64le
+    ignore:
+      - goos: darwin
+        goarch: "386"
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: riscv64
+      - goos: darwin
+        goarch: ppc64le
+      - goos: darwin
+        goarch: s390x
+      - goos: darwin
+        goarch: mips64
+      - goos: darwin
+        goarch: mips64le
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: windows
+        goarch: ppc64le
+      - goos: windows
+        goarch: s390x
+      - goos: windows
+        goarch: mips64
+      - goos: windows
+        goarch: mips64le
+      - goos: freebsd
+        goarch: "386"
+      - goos: freebsd
+        goarch: arm
+      - goos: freebsd
+        goarch: riscv64
+      - goos: freebsd
+        goarch: ppc64le
+      - goos: freebsd
+        goarch: s390x
+      - goos: freebsd
+        goarch: mips64
+      - goos: freebsd
+        goarch: mips64le
+      - goos: netbsd
+        goarch: "386"
+      - goos: netbsd
+        goarch: arm
+      - goos: netbsd
+        goarch: arm64
+      - goos: netbsd
+        goarch: riscv64
+      - goos: netbsd
+        goarch: ppc64le
+      - goos: netbsd
+        goarch: s390x
+      - goos: netbsd
+        goarch: mips64
+      - goos: netbsd
+        goarch: mips64le
+      - goos: openbsd
+        goarch: "386"
+      - goos: openbsd
+        goarch: arm
+      - goos: openbsd
+        goarch: arm64
+      - goos: openbsd
+        goarch: riscv64
+      - goos: openbsd
+        goarch: ppc64le
+      - goos: openbsd
+        goarch: s390x
+      - goos: openbsd
+        goarch: mips64
+      - goos: openbsd
+        goarch: mips64le
+
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+nfpms:
+  - vendor: ClawRemove
+    homepage: https://github.com/tianrking/ClawRemove
+    maintainer: ClawRemove Team
+    description: Agent Environment Inspector - Inspect, audit and clean AI agent environments
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    bindir: /usr/bin
+
+appimage:
+  - replacements:
+      amd64: x86_64
+      arm64: aarch64
+      arm: armhf
+      "386": i386
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  footer: |
+    ## Installation
+    ```bash
+    # Linux (deb)
+    sudo dpkg -i claw-remove_{{.Version}}_amd64.deb
+
+    # Linux (rpm)
+    sudo rpm -i claw-remove-{{.Version}}-1.x86_64.rpm
+
+    # Linux (AppImage)
+    chmod +x claw-remove-{{.Version}}-x86_64.AppImage
+    ./claw-remove-{{.Version}}-x86_64.AppImage
+
+    # macOS (DMG)
+    open claw-remove-{{.Version}}-macOS.dmg
+    ```

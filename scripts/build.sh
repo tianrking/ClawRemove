@@ -17,6 +17,10 @@ targets=(
   "linux 386"
   "linux arm"      # ARM v7 (Raspberry Pi)
   "linux riscv64"  # RISC-V
+  "linux ppc64le"  # IBM Power
+  "linux s390x"    # IBM Z
+  "linux mips64"   # MIPS64 big-endian
+  "linux mips64le" # MIPS64 little-endian
   # Windows
   "windows amd64"
   "windows arm64"

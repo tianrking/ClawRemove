@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,18 +22,61 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y zip
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools fakeroot dpkg-dev file
 
-      - name: Build Artifacts
-        run: ./scripts/build.sh
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
+  # macOS DMG (requires macOS runner for proper universal binary and DMG creation)
+  macos-dmg:
+    runs-on: macos-latest
+    needs: goreleaser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build Universal Binary
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          # Build for both architectures
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
+            -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=${VERSION}" \
+            -o claw-remove-amd64 ./cmd/claw-remove
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath \
+            -ldflags="-s -w -X github.com/tianrking/ClawRemove/internal/app.Version=${VERSION}" \
+            -o claw-remove-arm64 ./cmd/claw-remove
+          # Create universal binary
+          lipo -create -output claw-remove claw-remove-amd64 claw-remove-arm64
+          chmod +x claw-remove
+
+      - name: Create DMG
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          mkdir -p dmg-temp
+          cp claw-remove dmg-temp/
+          cp README.md dmg-temp/
+          cp LICENSE dmg-temp/
+          hdiutil create -volname "ClawRemove ${VERSION}" \
+            -srcfolder dmg-temp -ov -format UDZO \
+            claw-remove-${VERSION}-macOS.dmg
+
+      - name: Upload DMG
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/sha256sums.txt
-          draft: false
-          generate_release_notes: true
+          files: claw-remove-*.dmg

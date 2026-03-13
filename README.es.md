@@ -335,26 +335,133 @@ scripts                    scripts de build
 dist                       artefactos locales
 ```
 
+## Instalación
+
+### Binarios Precompilados
+
+Descarga desde [GitHub Releases](https://github.com/tianrking/ClawRemove/releases).
+
+**macOS:**
+```bash
+# DMG (recomendado)
+# Descarga claw-remove-VERSION-macOS.dmg, ábrelo y arrastra a Aplicaciones
+
+# O vía archivo comprimido
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-darwin-arm64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Linux:**
+```bash
+# Debian/Ubuntu (paquete deb)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove_VERSION_amd64.deb
+sudo dpkg -i claw-remove_VERSION_amd64.deb
+
+# RHEL/Fedora (paquete rpm)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1.x86_64.rpm
+sudo rpm -i claw-remove-VERSION-1.x86_64.rpm
+
+# Arch Linux
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1-x86_64.pkg.tar.zst
+sudo pacman -U claw-remove-VERSION-1-x86_64.pkg.tar.zst
+
+# AppImage (universal, sin instalación)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-x86_64.AppImage
+chmod +x claw-remove-VERSION-x86_64.AppImage
+./claw-remove-VERSION-x86_64.AppImage
+
+# O vía archivo comprimido
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-linux-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Windows:**
+```powershell
+# Descarga el ZIP para tu arquitectura
+# claw-remove-VERSION-windows-amd64.zip (x64)
+# claw-remove-VERSION-windows-arm64.zip (ARM64)
+# claw-remove-VERSION-windows-386.zip (32-bit)
+
+# Extrae y añade al PATH
+Expand-Archive claw-remove-VERSION-windows-amd64.zip -DestinationPath C:\Tools\claw-remove
+$env:PATH += ";C:\Tools\claw-remove"
+```
+
+**BSD:**
+```bash
+# FreeBSD
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-freebsd-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+### Desde Código Fuente
+
+```bash
+go install github.com/tianrking/ClawRemove/cmd/claw-remove@latest
+```
+
 ## Build
 
-Local:
+### Local
 
 ```bash
 go test ./...
 go build -o dist/claw-remove ./cmd/claw-remove
 ```
 
-Multiplataforma:
+### Usando GoReleaser
 
 ```bash
-./scripts/build.sh
+# Instalar GoReleaser
+go install github.com/goreleaser/goreleaser/v2@latest
+
+# Build snapshot local
+goreleaser build --snapshot --clean
+
+# Release completo (requiere tag)
+goreleaser release --clean
 ```
 
-PowerShell:
+### Artefactos de Release
 
-```powershell
-./scripts/build.ps1
-```
+Cada release incluye:
+
+| Formato | Plataforma | Descripción |
+|---------|------------|-------------|
+| `.dmg` | macOS | Instalador de imagen de disco |
+| `.deb` | Linux (Debian/Ubuntu) | Paquete APT |
+| `.rpm` | Linux (RHEL/Fedora) | Paquete RPM |
+| `.pkg.tar.zst` | Linux (Arch) | Paquete Arch Linux |
+| `.AppImage` | Linux (universal) | Ejecutable portátil |
+| `.zip` | Windows | Archivo comprimido |
+| `.tar.gz` | Todas las plataformas | Archivo comprimido |
+
+Plataformas soportadas (22 en total):
+
+**macOS:**
+- `darwin-amd64` (Intel)
+- `darwin-arm64` (Apple Silicon)
+
+**Linux:**
+- `linux-amd64` (x86_64)
+- `linux-arm64` (ARM64)
+- `linux-386` (32-bit)
+- `linux-arm` (ARM v7, Raspberry Pi)
+- `linux-riscv64` (RISC-V)
+- `linux-ppc64le` (IBM Power)
+- `linux-s390x` (IBM Z)
+- `linux-mips64` (MIPS64 big-endian)
+- `linux-mips64le` (MIPS64 little-endian)
+
+**Windows:**
+- `windows-amd64.exe` (x86_64)
+- `windows-arm64.exe` (ARM64)
+- `windows-386.exe` (32-bit)
+
+**BSD:**
+- `freebsd-amd64`, `freebsd-arm64`
+- `netbsd-amd64`
+- `openbsd-amd64`
 
 ## Flujo recomendado
 

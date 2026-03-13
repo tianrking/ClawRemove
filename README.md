@@ -356,6 +356,75 @@ scripts                    build helpers
 dist                       local build artifacts
 ```
 
+## Installation
+
+### Pre-built Binaries
+
+Download from [GitHub Releases](https://github.com/tianrking/ClawRemove/releases).
+
+**macOS:**
+```bash
+# DMG (recommended)
+# Download claw-remove-VERSION-macOS.dmg, open and drag to Applications
+
+# Or via tarball
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-darwin-arm64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Linux:**
+```bash
+# Debian/Ubuntu (deb package)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove_VERSION_amd64.deb
+sudo dpkg -i claw-remove_VERSION_amd64.deb
+
+# RHEL/Fedora (rpm package)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1.x86_64.rpm
+sudo rpm -i claw-remove-VERSION-1.x86_64.rpm
+
+# Arch Linux
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1-x86_64.pkg.tar.zst
+sudo pacman -U claw-remove-VERSION-1-x86_64.pkg.tar.zst
+
+# AppImage (universal, no installation required)
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-x86_64.AppImage
+chmod +x claw-remove-VERSION-x86_64.AppImage
+./claw-remove-VERSION-x86_64.AppImage
+
+# Or via tarball
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-linux-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Windows:**
+```powershell
+# Download the ZIP for your architecture
+# claw-remove-VERSION-windows-amd64.zip (x64)
+# claw-remove-VERSION-windows-arm64.zip (ARM64)
+# claw-remove-VERSION-windows-386.zip (32-bit)
+
+# Extract and add to PATH
+Expand-Archive claw-remove-VERSION-windows-amd64.zip -DestinationPath C:\Tools\claw-remove
+$env:PATH += ";C:\Tools\claw-remove"
+```
+
+**BSD:**
+```bash
+# FreeBSD
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-freebsd-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+
+# NetBSD / OpenBSD
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-netbsd-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/pkg/bin/
+```
+
+### From Source
+
+```bash
+go install github.com/tianrking/ClawRemove/cmd/claw-remove@latest
+```
+
 ## Build
 
 ### Local
@@ -365,41 +434,59 @@ go test ./...
 go build -o dist/claw-remove ./cmd/claw-remove
 ```
 
-### Release Matrix
+### Release (GoReleaser)
 
 ```bash
-./scripts/build.sh
+# Install GoReleaser
+go install github.com/goreleaser/goreleaser/v2@latest
+
+# Local snapshot build
+goreleaser build --snapshot --clean
+
+# Full release (requires tag)
+goreleaser release --clean
 ```
 
-Windows PowerShell:
+### Release Artifacts
 
-```powershell
-./scripts/build.ps1
-```
+Each release includes:
 
-Current release targets (14 platforms):
+| Format | Platform | Description |
+|--------|----------|-------------|
+| `.dmg` | macOS | Disk image installer |
+| `.deb` | Linux (Debian/Ubuntu) | APT package |
+| `.rpm` | Linux (RHEL/Fedora) | RPM package |
+| `.pkg.tar.zst` | Linux (Arch) | Arch Linux package |
+| `.AppImage` | Linux (universal) | Portable executable |
+| `.zip` | Windows | Archive with binary |
+| `.tar.gz` | All platforms | Compressed archive |
+
+Supported platforms (22 total):
 
 **macOS:**
-- `claw-remove-darwin-amd64` (Intel)
-- `claw-remove-darwin-arm64` (Apple Silicon)
+- `darwin-amd64` (Intel)
+- `darwin-arm64` (Apple Silicon)
 
 **Linux:**
-- `claw-remove-linux-amd64` (x86_64)
-- `claw-remove-linux-arm64` (ARM64)
-- `claw-remove-linux-386` (32-bit)
-- `claw-remove-linux-arm` (ARM v7, Raspberry Pi)
-- `claw-remove-linux-riscv64` (RISC-V)
+- `linux-amd64` (x86_64)
+- `linux-arm64` (ARM64)
+- `linux-386` (32-bit)
+- `linux-arm` (ARM v7, Raspberry Pi)
+- `linux-riscv64` (RISC-V)
+- `linux-ppc64le` (IBM Power)
+- `linux-s390x` (IBM Z)
+- `linux-mips64` (MIPS64 big-endian)
+- `linux-mips64le` (MIPS64 little-endian)
 
 **Windows:**
-- `claw-remove-windows-amd64.exe` (x86_64)
-- `claw-remove-windows-arm64.exe` (ARM64)
-- `claw-remove-windows-386.exe` (32-bit)
+- `windows-amd64.exe` (x86_64)
+- `windows-arm64.exe` (ARM64)
+- `windows-386.exe` (32-bit)
 
 **BSD:**
-- `claw-remove-freebsd-amd64`
-- `claw-remove-freebsd-arm64`
-- `claw-remove-netbsd-amd64`
-- `claw-remove-openbsd-amd64`
+- `freebsd-amd64`, `freebsd-arm64`
+- `netbsd-amd64`
+- `openbsd-amd64`
 
 ## Example Workflow
 

@@ -384,26 +384,133 @@ scripts                    构建脚本
 dist                       本地构建产物
 ```
 
+## 安装
+
+### 预编译二进制
+
+从 [GitHub Releases](https://github.com/tianrking/ClawRemove/releases) 下载。
+
+**macOS:**
+```bash
+# DMG（推荐）
+# 下载 claw-remove-VERSION-macOS.dmg，打开并拖到应用程序
+
+# 或通过压缩包
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-darwin-arm64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Linux:**
+```bash
+# Debian/Ubuntu（deb 包）
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove_VERSION_amd64.deb
+sudo dpkg -i claw-remove_VERSION_amd64.deb
+
+# RHEL/Fedora（rpm 包）
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1.x86_64.rpm
+sudo rpm -i claw-remove-VERSION-1.x86_64.rpm
+
+# Arch Linux
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-1-x86_64.pkg.tar.zst
+sudo pacman -U claw-remove-VERSION-1-x86_64.pkg.tar.zst
+
+# AppImage（通用，无需安装）
+wget https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-x86_64.AppImage
+chmod +x claw-remove-VERSION-x86_64.AppImage
+./claw-remove-VERSION-x86_64.AppImage
+
+# 或通过压缩包
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-linux-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+**Windows:**
+```powershell
+# 下载对应架构的 ZIP
+# claw-remove-VERSION-windows-amd64.zip (x64)
+# claw-remove-VERSION-windows-arm64.zip (ARM64)
+# claw-remove-VERSION-windows-386.zip (32位)
+
+# 解压并添加到 PATH
+Expand-Archive claw-remove-VERSION-windows-amd64.zip -DestinationPath C:\Tools\claw-remove
+$env:PATH += ";C:\Tools\claw-remove"
+```
+
+**BSD:**
+```bash
+# FreeBSD
+curl -sL https://github.com/tianrking/ClawRemove/releases/latest/download/claw-remove-VERSION-freebsd-amd64.tar.gz | tar xz
+sudo mv claw-remove /usr/local/bin/
+```
+
+### 从源码安装
+
+```bash
+go install github.com/tianrking/ClawRemove/cmd/claw-remove@latest
+```
+
 ## 构建
 
-本地：
+### 本地构建
 
 ```bash
 go test ./...
 go build -o dist/claw-remove ./cmd/claw-remove
 ```
 
-多平台：
+### 使用 GoReleaser 发布
 
 ```bash
-./scripts/build.sh
+# 安装 GoReleaser
+go install github.com/goreleaser/goreleaser/v2@latest
+
+# 本地快照构建
+goreleaser build --snapshot --clean
+
+# 完整发布（需要 tag）
+goreleaser release --clean
 ```
 
-PowerShell：
+### 发布产物
 
-```powershell
-./scripts/build.ps1
-```
+每个版本包含：
+
+| 格式 | 平台 | 说明 |
+|------|------|------|
+| `.dmg` | macOS | 磁盘镜像安装器 |
+| `.deb` | Linux (Debian/Ubuntu) | APT 包 |
+| `.rpm` | Linux (RHEL/Fedora) | RPM 包 |
+| `.pkg.tar.zst` | Linux (Arch) | Arch Linux 包 |
+| `.AppImage` | Linux (通用) | 便携式可执行文件 |
+| `.zip` | Windows | 压缩包 |
+| `.tar.gz` | 所有平台 | 压缩包 |
+
+支持的平台（共 22 个）：
+
+**macOS:**
+- `darwin-amd64` (Intel)
+- `darwin-arm64` (Apple Silicon)
+
+**Linux:**
+- `linux-amd64` (x86_64)
+- `linux-arm64` (ARM64)
+- `linux-386` (32位)
+- `linux-arm` (ARM v7, Raspberry Pi)
+- `linux-riscv64` (RISC-V)
+- `linux-ppc64le` (IBM Power)
+- `linux-s390x` (IBM Z)
+- `linux-mips64` (MIPS64 大端)
+- `linux-mips64le` (MIPS64 小端)
+
+**Windows:**
+- `windows-amd64.exe` (x86_64)
+- `windows-arm64.exe` (ARM64)
+- `windows-386.exe` (32位)
+
+**BSD:**
+- `freebsd-amd64`, `freebsd-arm64`
+- `netbsd-amd64`
+- `openbsd-amd64`
 
 ## 推荐使用流程
 
