@@ -95,6 +95,16 @@ func (m Mediator) ExecuteTool(ctx context.Context, report model.Report, tool str
 		return m.packageProbe(report, input)
 	case "process_probe":
 		return m.processProbe(report, input)
+	case "search_agent_traces":
+		return m.searchAgentTraces(report, input)
+	case "quick_scan":
+		return m.quickScan(report, input)
+	case "config_probe":
+		return m.configProbe(report, input)
+	case "credential_probe":
+		return m.credentialProbe(report, input)
+	case "file_content_search":
+		return m.fileContentSearch(report, input)
 	default:
 		return nil, fmt.Errorf("unsupported tool: %s", tool)
 	}
@@ -636,4 +646,466 @@ func currentUID() string {
 		return uid
 	}
 	return "0"
+}
+
+// searchAgentTraces searches for agent-specific patterns across the filesystem
+func (m Mediator) searchAgentTraces(report model.Report, input map[string]any) (any, error) {
+	productMarkers := report.ProductFacts.Markers
+	if len(productMarkers) == 0 {
+		productMarkers = []string{"agent", "bot", "assistant"}
+	}
+
+	result := map[string]any{
+		"product":       report.Product,
+		"markers":       productMarkers,
+		"traces":        []map[string]any{},
+		"analysis":      []string{},
+		"searchedPaths": []string{},
+	}
+
+	// Search paths that commonly contain agent traces
+	searchPaths := []struct {
+		path     string
+		category string
+	}{
+		{"/etc/hosts", "network"},
+		{"/etc/environment", "environment"},
+		{"/etc/profile", "shell"},
+		{"/etc/profile.d", "shell"},
+	}
+
+	// Add user-specific paths
+	homeDir, _ := os.UserHomeDir()
+	if homeDir != "" {
+		userPaths := []struct {
+			path     string
+			category string
+		}{
+			{filepath.Join(homeDir, ".ssh", "config"), "ssh"},
+			{filepath.Join(homeDir, ".ssh", "authorized_keys"), "ssh"},
+			{filepath.Join(homeDir, ".gitconfig"), "git"},
+			{filepath.Join(homeDir, ".npmrc"), "npm"},
+			{filepath.Join(homeDir, ".pypirc"), "python"},
+			{filepath.Join(homeDir, ".config"), "config"},
+		}
+		searchPaths = append(searchPaths, userPaths...)
+	}
+
+	var traces []map[string]any
+	var analysis []string
+
+	for _, sp := range searchPaths {
+		result["searchedPaths"] = append(result["searchedPaths"].([]string), sp.path)
+
+		info, err := os.Stat(sp.path)
+		if err != nil {
+			continue
+		}
+
+		if info.IsDir() {
+			// Search directory for matching files
+			filepath.Walk(sp.path, func(path string, fi os.FileInfo, err error) error {
+				if err != nil || fi.IsDir() {
+					return nil
+				}
+				if content, err := os.ReadFile(path); err == nil {
+					contentStr := string(content)
+					for _, marker := range productMarkers {
+						if strings.Contains(strings.ToLower(contentStr), strings.ToLower(marker)) {
+							traces = append(traces, map[string]any{
+								"path":     path,
+								"category": sp.category,
+								"marker":   marker,
+								"size":     fi.Size(),
+							})
+							analysis = append(analysis, fmt.Sprintf("Found '%s' in %s", marker, path))
+							break
+						}
+					}
+				}
+				return nil
+			})
+		} else {
+			// Search single file
+			if content, err := os.ReadFile(sp.path); err == nil {
+				contentStr := string(content)
+				for _, marker := range productMarkers {
+					if strings.Contains(strings.ToLower(contentStr), strings.ToLower(marker)) {
+						traces = append(traces, map[string]any{
+							"path":     sp.path,
+							"category": sp.category,
+							"marker":   marker,
+							"size":     info.Size(),
+						})
+						analysis = append(analysis, fmt.Sprintf("Found '%s' in %s", marker, sp.path))
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Limit results
+	limit := 20
+	if len(traces) > limit {
+		traces = traces[:limit]
+	}
+	if len(analysis) > limit {
+		analysis = analysis[:limit]
+	}
+
+	result["traces"] = traces
+	result["analysis"] = analysis
+	result["traceCount"] = len(traces)
+
+	return result, nil
+}
+
+// quickScan performs a fast scan of common sensitive directories
+func (m Mediator) quickScan(report model.Report, input map[string]any) (any, error) {
+	result := map[string]any{
+		"platform":       report.Host.OS,
+		"sensitivePaths": []map[string]any{},
+		"summary":        map[string]int{},
+	}
+
+	homeDir, _ := os.UserHomeDir()
+
+	// Define sensitive paths to check
+	sensitiveChecks := []struct {
+		path        string
+		description string
+		risk        string
+		check       func(string) map[string]any
+	}{
+		{
+			path:        "/etc/hosts",
+			description: "Hosts file - network DNS overrides",
+			risk:        "high",
+			check: func(p string) map[string]any {
+				if content, err := os.ReadFile(p); err == nil {
+					lines := strings.Split(string(content), "\n")
+					var nonStandard []string
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						if line != "" && !strings.HasPrefix(line, "#") &&
+							!strings.HasPrefix(line, "127.0.0.1 localhost") &&
+							!strings.HasPrefix(line, "::1 localhost") {
+							nonStandard = append(nonStandard, line)
+						}
+					}
+					return map[string]any{"nonStandardEntries": nonStandard, "count": len(nonStandard)}
+				}
+				return nil
+			},
+		},
+		{
+			path:        filepath.Join(homeDir, ".ssh"),
+			description: "SSH configuration directory",
+			risk:        "high",
+			check: func(p string) map[string]any {
+				if entries, err := os.ReadDir(p); err == nil {
+					var files []string
+					for _, e := range entries {
+						files = append(files, e.Name())
+					}
+					return map[string]any{"files": files, "count": len(files)}
+				}
+				return nil
+			},
+		},
+	}
+
+	var foundPaths []map[string]any
+	summary := map[string]int{"total": 0, "modified": 0, "highRisk": 0}
+
+	for _, check := range sensitiveChecks {
+		info, err := os.Stat(check.path)
+		if err != nil {
+			continue
+		}
+
+		summary["total"]++
+		pathInfo := map[string]any{
+			"path":        check.path,
+			"description": check.description,
+			"risk":        check.risk,
+			"exists":      true,
+			"isDir":       info.IsDir(),
+			"size":        info.Size(),
+		}
+
+		if checkResult := check.check(check.path); checkResult != nil {
+			pathInfo["details"] = checkResult
+			summary["modified"]++
+		}
+
+		if check.risk == "high" {
+			summary["highRisk"]++
+		}
+
+		foundPaths = append(foundPaths, pathInfo)
+	}
+
+	result["sensitivePaths"] = foundPaths
+	result["summary"] = summary
+
+	return result, nil
+}
+
+// configProbe analyzes configuration files for agent modifications
+func (m Mediator) configProbe(report model.Report, input map[string]any) (any, error) {
+	limit := 20
+	if raw, ok := input["limit"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			if v > 0 && int(v) < 100 {
+				limit = int(v)
+			}
+		case int:
+			if v > 0 && v < 100 {
+				limit = v
+			}
+		}
+	}
+
+	result := map[string]any{
+		"configs":  []map[string]any{},
+		"analysis": []string{},
+	}
+
+	homeDir, _ := os.UserHomeDir()
+	productMarkers := report.ProductFacts.Markers
+
+	// Common config file patterns
+	configPatterns := []string{
+		filepath.Join(homeDir, ".config", "*", "config.json"),
+		filepath.Join(homeDir, ".config", "*", "settings.json"),
+		filepath.Join(homeDir, "*", "config.json"),
+		filepath.Join(homeDir, ".env"),
+	}
+
+	var configs []map[string]any
+	var analysis []string
+
+	for _, pattern := range configPatterns {
+		matches, _ := filepath.Glob(pattern)
+		for _, match := range matches {
+			if len(configs) >= limit {
+				break
+			}
+
+			content, err := os.ReadFile(match)
+			if err != nil {
+				continue
+			}
+
+			configInfo := map[string]any{
+				"path":    match,
+				"size":    len(content),
+				"markers": []string{},
+			}
+
+			contentStr := string(content)
+			for _, marker := range productMarkers {
+				if strings.Contains(strings.ToLower(contentStr), strings.ToLower(marker)) {
+					configInfo["markers"] = append(configInfo["markers"].([]string), marker)
+				}
+			}
+
+			// Check for API keys
+			if strings.Contains(contentStr, "API_KEY") || strings.Contains(contentStr, "api_key") ||
+				strings.Contains(contentStr, "SECRET") || strings.Contains(contentStr, "secret") {
+				analysis = append(analysis, fmt.Sprintf("Potential secrets in: %s", match))
+				configInfo["hasSecrets"] = true
+			}
+
+			if len(configInfo["markers"].([]string)) > 0 || configInfo["hasSecrets"] == true {
+				configs = append(configs, configInfo)
+			}
+		}
+	}
+
+	result["configs"] = configs
+	result["analysis"] = analysis
+	result["count"] = len(configs)
+
+	return result, nil
+}
+
+// credentialProbe detects exposed credentials and API keys
+func (m Mediator) credentialProbe(report model.Report, input map[string]any) (any, error) {
+	result := map[string]any{
+		"findings":       []map[string]any{},
+		"riskLevel":      "unknown",
+		"recommendation": "",
+	}
+
+	homeDir, _ := os.UserHomeDir()
+
+	// Known credential patterns
+	credPatterns := []struct {
+		name     string
+		pattern  string
+		fileGlob string
+	}{
+		{"OpenAI API Key", "sk-", filepath.Join(homeDir, ".*")},
+		{"Anthropic API Key", "sk-ant-", filepath.Join(homeDir, ".*")},
+		{"Generic API Key", "API_KEY=", filepath.Join(homeDir, "*")},
+		{"Environment File", ".env", filepath.Join(homeDir, "**/.env")},
+	}
+
+	var findings []map[string]any
+	highRisk := false
+
+	// Check state directories for credentials
+	for _, dir := range report.Discovery.StateDirs {
+		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return nil
+			}
+
+			contentStr := string(content)
+			for _, cp := range credPatterns {
+				if strings.Contains(contentStr, cp.pattern) {
+					findings = append(findings, map[string]any{
+						"type":        cp.name,
+						"file":        path,
+						"pattern":     cp.pattern,
+						"risk":        "high",
+						"description": "Potential credential exposure",
+					})
+					highRisk = true
+				}
+			}
+			return nil
+		})
+	}
+
+	// Check environment variables
+	for _, env := range report.Discovery.EnvVars {
+		upperName := strings.ToUpper(env.Name)
+		if strings.Contains(upperName, "API_KEY") ||
+			strings.Contains(upperName, "SECRET") ||
+			strings.Contains(upperName, "TOKEN") ||
+			strings.Contains(upperName, "PASSWORD") {
+			findings = append(findings, map[string]any{
+				"type":        "Environment Variable",
+				"name":        env.Name,
+				"risk":        "medium",
+				"description": "Sensitive environment variable detected",
+			})
+		}
+	}
+
+	result["findings"] = findings
+	if highRisk {
+		result["riskLevel"] = "high"
+		result["recommendation"] = "Immediately rotate exposed API keys and secrets"
+	} else if len(findings) > 0 {
+		result["riskLevel"] = "medium"
+		result["recommendation"] = "Review and secure detected credentials"
+	} else {
+		result["riskLevel"] = "low"
+		result["recommendation"] = "No exposed credentials detected"
+	}
+
+	return result, nil
+}
+
+// fileContentSearch searches for specific patterns in files
+func (m Mediator) fileContentSearch(report model.Report, input map[string]any) (any, error) {
+	pattern, err := stringInput(input, "pattern")
+	if err != nil {
+		return nil, err
+	}
+
+	limit := 20
+	if raw, ok := input["limit"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			if v > 0 && int(v) < 100 {
+				limit = int(v)
+			}
+		case int:
+			if v > 0 && v < 100 {
+				limit = v
+			}
+		}
+	}
+
+	result := map[string]any{
+		"pattern":  pattern,
+		"matches":  []map[string]any{},
+		"count":    0,
+		"analysis": []string{},
+	}
+
+	var matches []map[string]any
+	var analysis []string
+
+	// Search in discovered paths
+	searchPaths := [][]string{
+		report.Discovery.StateDirs,
+		report.Discovery.WorkspaceDirs,
+		report.Discovery.TempPaths,
+	}
+
+	for _, pathGroup := range searchPaths {
+		for _, basePath := range pathGroup {
+			filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+				if err != nil || info.IsDir() || len(matches) >= limit {
+					return nil
+				}
+
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return nil
+				}
+
+				contentStr := string(content)
+				if strings.Contains(strings.ToLower(contentStr), strings.ToLower(pattern)) {
+					// Find context around match
+					idx := strings.Index(strings.ToLower(contentStr), strings.ToLower(pattern))
+					contextStart := max(0, idx-50)
+					contextEnd := min(len(contentStr), idx+len(pattern)+50)
+					context := contentStr[contextStart:contextEnd]
+
+					matches = append(matches, map[string]any{
+						"path":    path,
+						"context": context,
+						"size":    info.Size(),
+					})
+
+					analysis = append(analysis, fmt.Sprintf("Found '%s' in %s", pattern, path))
+				}
+				return nil
+			})
+		}
+	}
+
+	result["matches"] = matches
+	result["count"] = len(matches)
+	result["analysis"] = analysis
+
+	return result, nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

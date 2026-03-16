@@ -27,10 +27,18 @@ type reactorStep struct {
 	ThoughtSummary  string                 `json:"thoughtSummary,omitempty"`
 	Tool            string                 `json:"tool,omitempty"`
 	Input           map[string]any         `json:"input,omitempty"`
+	Tools           []toolCall             `json:"tools,omitempty"` // Batch tool execution
 	NeededEvidence  []string               `json:"neededEvidence,omitempty"`
 	Recommendations []model.Recommendation `json:"recommendations,omitempty"`
 	RiskNotes       []string               `json:"riskNotes,omitempty"`
 	UserMessage     string                 `json:"userMessage,omitempty"`
+	Confidence      float64                `json:"confidence,omitempty"`      // 0.0 - 1.0
+	Progress        string                 `json:"progress,omitempty"`        // "starting", "gathering", "analyzing", "finalizing"
+}
+
+type toolCall struct {
+	Tool  string         `json:"tool"`
+	Input map[string]any `json:"input,omitempty"`
 }
 
 func NewAdvisorFromEnv(runner system.Runner, host platform.Host, providerTools []tools.Tool) Advisor {
@@ -128,24 +136,59 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 		if next.ThoughtSummary != "" {
 			stream("   💭 Thought: %s", truncateText(next.ThoughtSummary, 100))
 		}
+		if next.Confidence > 0 {
+			stream("   📊 Confidence: %.0f%%", next.Confidence*100)
+		}
+		if next.Progress != "" {
+			stream("   📈 Progress: %s", next.Progress)
+		}
 
 		switch strings.ToLower(next.Kind) {
 		case "tool":
-			stream("   🔧 Using tool: %s", next.Tool)
-			toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, next.Tool, next.Input)
-			if toolErr != nil {
-				// Instead of crashing, feed error back to AI and let it continue
-				stream("   ⚠️ Tool error: %s", toolErr.Error())
+			// Support batch tool execution
+			toolCalls := next.Tools
+			if len(toolCalls) == 0 && next.Tool != "" {
+				toolCalls = []toolCall{{Tool: next.Tool, Input: next.Input}}
+			}
+
+			var toolResults []map[string]any
+			for _, tc := range toolCalls {
+				stream("   🔧 Using tool: %s", tc.Tool)
+				toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, tc.Tool, tc.Input)
+				if toolErr != nil {
+					stream("   ⚠️ Tool error: %s", toolErr.Error())
+					toolResults = append(toolResults, map[string]any{
+						"tool":  tc.Tool,
+						"error": toolErr.Error(),
+					})
+				} else {
+					stream("   ✅ Tool result received")
+					toolResults = append(toolResults, map[string]any{
+						"tool":   tc.Tool,
+						"result": toolResult,
+					})
+				}
+			}
+
+			// If any tool failed, let AI know
+			var failedTools []string
+			for _, tr := range toolResults {
+				if tr["error"] != nil {
+					failedTools = append(failedTools, tr["tool"].(string))
+				}
+			}
+			if len(failedTools) > 0 && len(failedTools) == len(toolResults) {
+				// All tools failed
 				messages = append(messages,
 					llmproviders.Message{Role: "assistant", Content: content},
-					llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool '%s' failed: %s\nPlease try a different approach or return 'final' if you have enough information.", next.Tool, toolErr.Error())},
+					llmproviders.Message{Role: "user", Content: fmt.Sprintf("All tools failed: %v\nPlease try a different approach or return 'final' if you have enough information.", failedTools)},
 				)
 				continue
 			}
-			stream("   ✅ Tool result received")
+
 			messages = append(messages,
 				llmproviders.Message{Role: "assistant", Content: content},
-				llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool result for %s:\n%s", next.Tool, mustJSON(toolResult))},
+				llmproviders.Message{Role: "user", Content: fmt.Sprintf("Tool results:\n%s\n\nRemaining steps: %d/%d", mustJSON(toolResults), a.config.MaxSteps-step-1, a.config.MaxSteps)},
 			)
 		case "final":
 			stream("")

@@ -337,6 +337,11 @@ When `--ai` is enabled, ClawRemove uses a **ReAct (Reasoning + Acting)** mechani
 | Tool | Platform | Description |
 |------|----------|-------------|
 | `deep_analysis` | All | Comprehensive overview of all artifacts |
+| `quick_scan` | All | Fast scan of common sensitive directories |
+| `search_agent_traces` | All | Search for agent-specific patterns across filesystem |
+| `credential_probe` | All | Detect exposed API keys and secrets |
+| `config_probe` | All | Analyze configuration files for agent modifications |
+| `file_content_search` | All | Search for specific patterns in files |
 | `registry_probe` | Windows | Registry startup entries, uninstall keys |
 | `env_probe` | All | PATH modifications, API keys, configs |
 | `hosts_probe` | All | Hosts file domain mappings |
@@ -350,6 +355,14 @@ When `--ai` is enabled, ClawRemove uses a **ReAct (Reasoning + Acting)** mechani
 - **Environment**: PATH, API keys, custom variables
 - **Network**: Hosts entries, port listeners
 - **Autostart**: launchd (macOS), systemd (Linux), registry (Windows), cron
+- **Credentials**: API keys, secrets, tokens in config files
+- **SSH/Git**: Configuration modifications by agents
+
+**Intelligent Features:**
+- **Batch Tool Execution**: AI can run multiple probes in parallel
+- **Confidence Tracking**: AI reports confidence level (0-100%)
+- **Progress Indicators**: starting → gathering → analyzing → finalizing
+- **Error Recovery**: Automatically adapts when tools fail
 
 **Example Output:**
 ```
