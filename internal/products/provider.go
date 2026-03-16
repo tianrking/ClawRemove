@@ -6,6 +6,7 @@ import (
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/products/aider"
 	"github.com/tianrking/ClawRemove/internal/products/cline"
+	"github.com/tianrking/ClawRemove/internal/products/continuedev"
 	"github.com/tianrking/ClawRemove/internal/products/cursor"
 	"github.com/tianrking/ClawRemove/internal/products/nanobot"
 	"github.com/tianrking/ClawRemove/internal/products/nanoclaw"
@@ -41,6 +42,7 @@ func Registry() []Provider {
 		windsurf.Provider{},
 		aider.Provider{},
 		cline.Provider{},
+		continuedev.Provider{},
 	}
 }
 

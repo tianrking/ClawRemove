@@ -275,7 +275,7 @@ NOT similar to:
 - [x] Windsurf provider
 - [x] Aider provider
 - [x] Cline provider
-- [ ] Continue.dev provider
+- [x] Continue.dev provider
 
 ### Phase 4: Advanced Detection
 
@@ -306,6 +306,7 @@ NOT similar to:
 | Windsurf | IDE | ~/.windsurf |
 | Aider | CLI | ~/.aider |
 | Cline | Extension | ~/.cline |
+| Continue | Extension | ~/.continue |
 
 ## Supported Runtimes
 
