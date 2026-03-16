@@ -66,6 +66,7 @@ claw-remove apply --product openclaw
 | Cursor | AI-powered IDE | ~/.cursor |
 | Windsurf | Codeium AI IDE | ~/.windsurf |
 | Aider | AI pair programming CLI | ~/.aider |
+| Cline | VS Code AI extension | ~/.cline |
 
 ## Scope
 

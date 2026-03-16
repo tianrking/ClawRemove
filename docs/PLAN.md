@@ -274,7 +274,7 @@ NOT similar to:
 - [x] Cursor provider
 - [x] Windsurf provider
 - [x] Aider provider
-- [ ] Cline provider
+- [x] Cline provider
 - [ ] Continue.dev provider
 
 ### Phase 4: Advanced Detection
