@@ -508,3 +508,33 @@ func PrintCleanup(w io.Writer, report model.CleanupReport, jsonMode bool) error 
 	return err
 }
 
+// PrintSnapshots prints a list of available backups.
+func PrintSnapshots(w io.Writer, snapshots []backup.Snapshot, jsonMode bool) error {
+	if jsonMode {
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(map[string]any{"snapshots": snapshots})
+	}
+
+	lines := []string{
+		"Available Snapshots",
+		"─────────────────────────",
+	}
+
+	if len(snapshots) == 0 {
+		lines = append(lines, "", "No snapshots found.")
+	} else {
+		for _, snap := range snapshots {
+			lines = append(lines, fmt.Sprintf("ID: %s", snap.ID))
+			lines = append(lines, fmt.Sprintf("  Date:    %s", snap.Timestamp.Local().Format("2006-01-02 15:04:05")))
+			lines = append(lines, fmt.Sprintf("  Product: %s", snap.Product))
+			lines = append(lines, fmt.Sprintf("  Items:   %d files/dirs", len(snap.Items)))
+			lines = append(lines, "")
+		}
+		lines = append(lines, "To restore: claw-remove rollback --id <ID>")
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+

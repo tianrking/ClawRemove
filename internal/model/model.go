@@ -10,6 +10,8 @@ type Options struct {
 	JSON          bool
 	AI            bool
 	AuditOnly     bool
+	NoBackup      bool
+	SnapshotID    string
 	KeepCLI       bool
 	KeepApp       bool
 	KeepWorkspace bool

@@ -5,9 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
 
+	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/cleanup"
 	"github.com/tianrking/ClawRemove/internal/core"
 	"github.com/tianrking/ClawRemove/internal/llm"
@@ -89,6 +90,33 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		}
 
 		return 0, output.PrintCleanup(stdout, report, options.JSON)
+	}
+
+	// Backup commands
+	if options.Command == "snapshots" || options.Command == "rollback" {
+		homeDir, _ := os.UserHomeDir()
+		mgr := backup.NewManager(filepath.Join(homeDir, ".clawremove"))
+
+		if options.Command == "snapshots" {
+			snaps, err := mgr.ListSnapshots()
+			if err != nil {
+				return 1, err
+			}
+			return 0, output.PrintSnapshots(stdout, snaps, options.JSON)
+		}
+
+		if options.Command == "rollback" {
+			if options.SnapshotID == "" {
+				return 1, errors.New("rollback requires --id flag with snapshot ID")
+			}
+			if err := mgr.Rollback(options.SnapshotID); err != nil {
+				return 1, fmt.Errorf("rollback failed: %w", err)
+			}
+			if !options.JSON && !options.Quiet {
+				fmt.Fprintf(stdout, "✅ Successfully rolled back to snapshot %s\n", options.SnapshotID)
+			}
+			return 0, nil
+		}
 	}
 
 	// Handle --product all to run across all registered products
@@ -232,6 +260,8 @@ COMMANDS:
     hygiene        AI storage usage analysis
     cleanup        Scan and clean old models, caches, vector DBs, and logs
     products       List supported product providers
+    snapshots      List available backup snapshots
+    rollback       Restore a state from a backup snapshot
     audit          Discover residuals for a product
     plan           Generate deletion plan (dry-run)
     apply          Execute cleanup actions
@@ -286,7 +316,7 @@ func parseOptions(args []string) (model.Options, error) {
 		case "environment", "inventory", "security", "hygiene", "cleanup":
 			opts.Command = args[0]
 			args = args[1:] // Continue to parse flags
-		case "audit", "plan", "apply", "verify", "explain":
+		case "audit", "plan", "apply", "verify", "explain", "snapshots", "rollback":
 			opts.Command = args[0]
 			args = args[1:]
 		}
@@ -306,8 +336,10 @@ func parseOptions(args []string) (model.Options, error) {
 	fs.BoolVar(&opts.KillProcesses, "kill-processes", false, "terminate matching processes")
 	fs.BoolVar(&opts.RemoveDocker, "remove-docker", false, "remove matching docker/podman containers and images")
 	fs.BoolVar(&opts.Version, "version", false, "print version information and exit")
+	fs.BoolVar(&opts.NoBackup, "no-backup", false, "skip taking safety backup before applying removals")
 	fs.StringVar(&opts.Category, "category", "", "cleanup category filter (model_version/orphaned_cache/unused_vectordb/log_rotation/all)")
 	fs.StringVar(&opts.Product, "product", opts.Product, "product provider id")
+	fs.StringVar(&opts.SnapshotID, "id", "", "snapshot id for rollback")
 	fs.SetOutput(io.Discard)
 	if err := fs.Parse(args); err != nil {
 		return model.Options{}, fmt.Errorf("parse flags: %w", err)

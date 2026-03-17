@@ -6,21 +6,44 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"slices"
 
+	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
 
 type Executor struct {
 	runner system.Runner
+	backup *backup.Manager
 }
 
-func New(runner system.Runner) Executor {
-	return Executor{runner: runner}
+func New(runner system.Runner, backupMgr *backup.Manager) Executor {
+	return Executor{runner: runner, backup: backupMgr}
 }
 
-func (e Executor) Execute(ctx context.Context, plan model.Plan, options model.Options) []model.Result {
+func (e Executor) Execute(ctx context.Context, plan model.Plan, options model.Options, product string) []model.Result {
 	var results []model.Result
+
+	if !options.DryRun && !options.NoBackup && e.backup != nil {
+		id, err := e.backup.CreateSnapshot(product, plan)
+		if err != nil {
+			return []model.Result{{
+				OK:      false,
+				Action:  "backup",
+				Error:   "Backup failed: " + err.Error(),
+			}}
+		}
+		if id != "" {
+			results = append(results, model.Result{
+				OK:      true,
+				Action:  "backup",
+				Target:  id,
+				Reason:  "Created pre-execution snapshot",
+			})
+		}
+	}
+
 	for _, action := range plan.Actions {
 		switch action.Kind {
 		case model.ActionReportOnly:
