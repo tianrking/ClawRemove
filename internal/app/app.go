@@ -11,12 +11,14 @@ import (
 	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/cleanup"
 	"github.com/tianrking/ClawRemove/internal/core"
+	"github.com/tianrking/ClawRemove/internal/executor"
 	"github.com/tianrking/ClawRemove/internal/llm"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/output"
 	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/products"
 	"github.com/tianrking/ClawRemove/internal/system"
+	"github.com/tianrking/ClawRemove/internal/tui"
 )
 
 var Version = "dev"
@@ -32,9 +34,14 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	}
 
 	// Show help if no command or help requested
+	// If no command provided but stdin is terminal, launch TUI
 	if options.Command == "help" {
-		fmt.Fprintln(stdout, usage)
-		return 0, nil
+		if len(args) == 0 {
+			options.Command = "tui"
+		} else {
+			fmt.Fprintln(stdout, usage)
+			return 0, nil
+		}
 	}
 
 	if options.Command == "products" {
@@ -90,6 +97,21 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		}
 
 		return 0, output.PrintCleanup(stdout, report, options.JSON)
+	}
+	
+	if options.Command == "tui" {
+		runner := system.NewRunner()
+		host := platform.Detect()
+		engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, nil), host)
+		scanner := cleanup.NewScanner(runner)
+		homeDir, _ := os.UserHomeDir()
+		backupMgr := backup.NewManager(filepath.Join(homeDir, ".clawremove"))
+		exec := executor.New(runner, backupMgr)
+		
+		if err := tui.Start(engine, scanner, exec, options); err != nil {
+			return 1, err
+		}
+		return 0, nil
 	}
 
 	// Backup commands
@@ -259,6 +281,7 @@ COMMANDS:
     security       AI tool security audit
     hygiene        AI storage usage analysis
     cleanup        Scan and clean old models, caches, vector DBs, and logs
+    tui            Launch interactive Terminal User Interface
     products       List supported product providers
     snapshots      List available backup snapshots
     rollback       Restore a state from a backup snapshot
@@ -313,7 +336,7 @@ func parseOptions(args []string) (model.Options, error) {
 		case "products":
 			opts.Command = "products"
 			return opts, nil
-		case "environment", "inventory", "security", "hygiene", "cleanup":
+		case "environment", "inventory", "security", "hygiene", "cleanup", "tui":
 			opts.Command = args[0]
 			args = args[1:] // Continue to parse flags
 		case "audit", "plan", "apply", "verify", "explain", "snapshots", "rollback":

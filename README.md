@@ -44,6 +44,9 @@ claw-remove hygiene
 # Scan for cleanup candidates (old models, caches, logs)
 claw-remove cleanup
 
+# Interactive Terminal UI for environment scanning and cleanup
+claw-remove tui
+
 # Scan only a specific category
 claw-remove cleanup --category model_version
 
@@ -158,6 +161,11 @@ claw-remove apply --product openclaw
 claw-remove apply --product openclaw --yes
 claw-remove verify --product openclaw --json
 claw-remove explain --product openclaw --json
+
+### Interactive Cleanup
+```bash
+claw-remove tui
+```
 ```
 
 ### Command Summary
