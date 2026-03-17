@@ -3,7 +3,10 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/discovery"
 	"github.com/tianrking/ClawRemove/internal/evidence"
 	"github.com/tianrking/ClawRemove/internal/executor"
@@ -55,8 +58,10 @@ func (e Engine) RunWithStream(ctx context.Context, options model.Options, stream
 	verification := verify.Classify(evidenceSet, provider.VerificationRules())
 	var results []model.Result
 	if options.Command == "apply" && !options.AuditOnly {
-		exec := executor.New(e.runner)
-		results = exec.Execute(ctx, executionPlan, options)
+		homeDir, _ := os.UserHomeDir()
+		backupMgr := backup.NewManager(filepath.Join(homeDir, ".clawremove"))
+		exec := executor.New(e.runner, backupMgr)
+		results = exec.Execute(ctx, executionPlan, options, provider.ID())
 	}
 
 	ok := true

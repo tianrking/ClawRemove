@@ -128,6 +128,16 @@ func (s *Scanner) scanRuntimes(ctx context.Context) []RuntimeInfo {
 		runtimes = append(runtimes, *localai)
 	}
 
+	// vLLM
+	if vllm := s.detectVLLM(ctx); vllm != nil {
+		runtimes = append(runtimes, *vllm)
+	}
+
+	// llama.cpp
+	if llamacpp := s.detectLlamaCPP(ctx); llamacpp != nil {
+		runtimes = append(runtimes, *llamacpp)
+	}
+
 	return runtimes
 }
 
@@ -219,6 +229,41 @@ func (s *Scanner) detectLocalAI(ctx context.Context) *RuntimeInfo {
 	return info
 }
 
+func (s *Scanner) detectVLLM(ctx context.Context) *RuntimeInfo {
+	if !s.runner.Exists(ctx, "vllm") {
+		return nil
+	}
+
+	info := &RuntimeInfo{
+		Name:    "vLLM",
+		Running: false,
+	}
+
+	result := s.runner.Run(ctx, "pgrep", "-f", "vllm")
+	info.Running = result.OK && result.Stdout != ""
+	info.Ports = []int{8000}
+	return info
+}
+
+func (s *Scanner) detectLlamaCPP(ctx context.Context) *RuntimeInfo {
+	if !s.runner.Exists(ctx, "llama-server") && !s.runner.Exists(ctx, "llama-cli") && !s.runner.Exists(ctx, "llama.cpp") {
+		return nil
+	}
+
+	info := &RuntimeInfo{
+		Name:    "llama.cpp",
+		Running: false,
+	}
+
+	result := s.runner.Run(ctx, "pgrep", "-f", "llama-server")
+	if !result.OK || result.Stdout == "" {
+		result = s.runner.Run(ctx, "pgrep", "-f", "llama.cpp")
+	}
+	info.Running = result.OK && strings.TrimSpace(result.Stdout) != ""
+	info.Ports = []int{8080}
+	return info
+}
+
 // scanFrameworks detects AI frameworks and SDKs.
 func (s *Scanner) scanFrameworks(ctx context.Context) []FrameworkInfo {
 	var frameworks []FrameworkInfo
@@ -229,6 +274,7 @@ func (s *Scanner) scanFrameworks(ctx context.Context) []FrameworkInfo {
 		"transformers", "torch", "tensorflow", "keras",
 		"chromadb", "pinecone-client", "weaviate-client",
 		"tiktoken", "sentence-transformers",
+		"langgraph", "autogen", "crewai", "vllm", "llama-cpp-python",
 	}
 
 	for _, pkg := range pythonPkgs {
