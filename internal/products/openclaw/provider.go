@@ -2,6 +2,10 @@ package openclaw
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/skills"
@@ -209,9 +213,46 @@ func (stateProbeTool) Info() model.ProviderTool {
 }
 
 func (stateProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
-	// This delegates execution to mediator fallback for generic probes inside ClawRemove core right now.
-	// Over time, product-specific specific execution could be handled here directly, parsing `input`.
-	return nil, nil // return nil so the generic Mediator can pick it up.
+	targetRaw, ok := input["target"]
+	if !ok {
+		return map[string]any{
+			"stateDirs":     report.Discovery.StateDirs,
+			"workspaceDirs": report.Discovery.WorkspaceDirs,
+			"tempPaths":     report.Discovery.TempPaths,
+			"appPaths":      report.Discovery.AppPaths,
+			"cliPaths":      report.Discovery.CLIPaths,
+		}, nil
+	}
+	target, ok := targetRaw.(string)
+	if !ok {
+		return nil, fmt.Errorf("target must be string")
+	}
+
+	info, err := os.Stat(target)
+	if err != nil {
+		return map[string]any{"target": target, "exists": false}, nil
+	}
+
+	result := map[string]any{
+		"target": target,
+		"exists": true,
+		"isDir":  info.IsDir(),
+		"size":   info.Size(),
+	}
+
+	if info.IsDir() {
+		entries, _ := os.ReadDir(target)
+		var names []string
+		for i, entry := range entries {
+			if i >= 20 {
+				break
+			}
+			names = append(names, entry.Name())
+		}
+		result["entries"] = names
+	}
+
+	return result, nil
 }
 
 type runtimeProbeTool struct{}
@@ -227,7 +268,35 @@ func (runtimeProbeTool) Info() model.ProviderTool {
 }
 
 func (runtimeProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
-	return nil, nil
+	targetRaw, ok := input["target"]
+	if !ok {
+		return map[string]any{
+			"services":     report.Discovery.Services,
+			"packages":     report.Discovery.Packages,
+			"processes":    report.Discovery.Processes,
+			"listeners":    report.Discovery.Listeners,
+			"registryKeys": report.Discovery.RegistryKeys,
+		}, nil
+	}
+
+	target, _ := targetRaw.(string)
+	for _, svc := range report.Discovery.Services {
+		if svc.Name == target || svc.Path == target {
+			result := map[string]any{"type": "service", "name": svc.Name, "platform": svc.Platform}
+			if svc.Path != "" {
+				if content, err := os.ReadFile(svc.Path); err == nil {
+					lines := strings.Split(string(content), "\n")
+					if len(lines) > 20 {
+						lines = lines[:20]
+					}
+					result["preview"] = lines
+				}
+			}
+			return result, nil
+		}
+	}
+
+	return nil, fmt.Errorf("runtime target %q not found", target)
 }
 
 type shellProbeTool struct{}
@@ -243,5 +312,38 @@ func (shellProbeTool) Info() model.ProviderTool {
 }
 
 func (shellProbeTool) Execute(ctx context.Context, report model.Report, input map[string]any) (any, error) {
-	return nil, nil
+	targetRaw, ok := input["target"]
+	if !ok {
+		return map[string]any{
+			"shellProfiles": report.Discovery.ShellProfiles,
+		}, nil
+	}
+
+	target, _ := targetRaw.(string)
+	for _, profile := range report.Discovery.ShellProfiles {
+		if profile == target {
+			content, err := os.ReadFile(target)
+			if err != nil {
+				return map[string]any{"exists": false, "error": err.Error()}, nil
+			}
+			
+			var markers []string
+			lines := strings.Split(string(content), "\n")
+			for _, line := range lines {
+				lower := strings.ToLower(line)
+				if strings.Contains(lower, "openclaw") || strings.Contains(lower, "clawdbot") {
+					markers = append(markers, strings.TrimSpace(line))
+				}
+			}
+			
+			return map[string]any{
+				"target":  target,
+				"exists":  true,
+				"matches": markers,
+				"count":   len(markers),
+			}, nil
+		}
+	}
+	
+	return nil, fmt.Errorf("shell profile %q not found in discovery", target)
 }
