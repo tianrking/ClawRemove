@@ -436,3 +436,75 @@ func ConfirmApply(reader io.Reader, stdout io.Writer, stderr io.Writer, product 
 	}
 	return true, nil
 }
+
+// PrintCleanup prints a cleanup scan report.
+func PrintCleanup(w io.Writer, report model.CleanupReport, jsonMode bool) error {
+	if jsonMode {
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	}
+
+	lines := []string{
+		"AI Cleanup Scan",
+		"─────────────────────────",
+	}
+
+	if len(report.Candidates) == 0 {
+		lines = append(lines, "",
+			"No cleanup candidates found.")
+	} else {
+		// Group by category
+		categories := map[string][]model.CleanupCandidate{}
+		categoryOrder := []string{"model_version", "orphaned_cache", "unused_vectordb", "log_rotation"}
+		for _, c := range report.Candidates {
+			categories[c.Category] = append(categories[c.Category], c)
+		}
+
+		categoryNames := map[string]string{
+			"model_version":    "📦 Old Model Versions",
+			"orphaned_cache":   "🗑️  Orphaned Caches",
+			"unused_vectordb":  "🗄️  Unused Vector Databases",
+			"log_rotation":     "📝 Log Files",
+		}
+
+		for _, cat := range categoryOrder {
+			items, ok := categories[cat]
+			if !ok || len(items) == 0 {
+				continue
+			}
+
+			catName := categoryNames[cat]
+			if catName == "" {
+				catName = cat
+			}
+
+			var catSize int64
+			for _, item := range items {
+				catSize += item.Size
+			}
+
+			lines = append(lines, "",
+				fmt.Sprintf("%s (%s)", catName, formatSize(catSize)))
+
+			for _, item := range items {
+				risk := ""
+				if item.Risk == "medium" {
+					risk = " ⚠️"
+				} else if item.Risk == "high" {
+					risk = " 🔴"
+				}
+				lines = append(lines, fmt.Sprintf("  - %s%s", item.Reason, risk))
+				lines = append(lines, fmt.Sprintf("      %s (%s)", item.Path, formatSize(item.Size)))
+			}
+		}
+
+		lines = append(lines, "",
+			"─────────────────────────",
+			fmt.Sprintf("Total reclaimable: %s (%d items)", formatSize(report.TotalReclaimable), len(report.Candidates)))
+	}
+
+	_, err := io.WriteString(w, strings.Join(lines, "\n")+"\n")
+	return err
+}
+

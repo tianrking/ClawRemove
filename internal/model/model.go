@@ -3,6 +3,7 @@ package model
 type Options struct {
 	Command       string
 	Product       string
+	Category      string
 	DryRun        bool
 	Yes           bool
 	Quiet         bool
@@ -299,4 +300,30 @@ type HygieneSection struct {
 	TotalSize     int64  `json:"totalSize"`
 	Recommendations []string `json:"recommendations"`
 	Summary       string `json:"summary"`
+}
+
+// CleanupReport contains cleanup scan results.
+type CleanupReport struct {
+	Candidates       []CleanupCandidate `json:"candidates"`
+	TotalReclaimable int64              `json:"totalReclaimable"`
+	Summary          string             `json:"summary"`
+}
+
+// CleanupCandidate represents a file or directory that can be cleaned up.
+type CleanupCandidate struct {
+	Path     string `json:"path"`
+	Size     int64  `json:"size"`
+	Reason   string `json:"reason"`
+	Category string `json:"category"` // model_version, orphaned_cache, unused_vectordb, log_rotation
+	Risk     string `json:"risk"`     // low, medium, high
+	Source   string `json:"source"`   // which runtime/agent this belongs to
+}
+
+// CleanupResult represents the result of a cleanup action.
+type CleanupResult struct {
+	Path      string `json:"path"`
+	OK        bool   `json:"ok"`
+	DryRun    bool   `json:"dryRun,omitempty"`
+	Reclaimed int64  `json:"reclaimed,omitempty"`
+	Error     string `json:"error,omitempty"`
 }

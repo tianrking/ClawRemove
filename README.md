@@ -41,6 +41,12 @@ claw-remove security
 # Analyze AI storage usage
 claw-remove hygiene
 
+# Scan for cleanup candidates (old models, caches, logs)
+claw-remove cleanup
+
+# Scan only a specific category
+claw-remove cleanup --category model_version
+
 # Clean up an agent
 claw-remove apply --product openclaw
 ```
@@ -165,6 +171,8 @@ claw-remove explain --product openclaw --json
   AI tool security audit (API key exposure).
 - `hygiene`
   AI storage usage analysis.
+- `cleanup`
+  Scan and clean old models, orphaned caches, unused vector DBs, and rotated logs.
 
 **Cleanup Commands:**
 - `products`
@@ -186,6 +194,8 @@ Shared flags:
 
 - `--product`
   Product provider id. Options: `openclaw`, `nanobot`, `picoclaw`.
+- `--category`
+  Cleanup category filter. Options: `model_version`, `orphaned_cache`, `unused_vectordb`, `log_rotation`, `all`.
 - `--json`
   Emit structured machine-readable output.
 - `--ai`

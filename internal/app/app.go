@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/tianrking/ClawRemove/internal/cleanup"
 	"github.com/tianrking/ClawRemove/internal/core"
 	"github.com/tianrking/ClawRemove/internal/llm"
 	"github.com/tianrking/ClawRemove/internal/model"
@@ -60,6 +61,34 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		case "environment":
 			return 0, output.PrintEnvironment(stdout, envReport, options.JSON)
 		}
+	}
+
+	// Cleanup command (no product required)
+	if options.Command == "cleanup" {
+		runner := system.NewRunner()
+		scanner := cleanup.NewScanner(runner)
+		report := scanner.ScanAll(ctx)
+
+		// Filter by category if specified
+		if options.Category != "" && options.Category != "all" {
+			var filtered []model.CleanupCandidate
+			for _, c := range report.Candidates {
+				if c.Category == options.Category {
+					filtered = append(filtered, c)
+				}
+			}
+			report.Candidates = filtered
+			var totalReclaimable int64
+			for _, c := range filtered {
+				totalReclaimable += c.Size
+			}
+			report.TotalReclaimable = totalReclaimable
+			if len(filtered) == 0 {
+				report.Summary = "No cleanup candidates found for category: " + options.Category
+			}
+		}
+
+		return 0, output.PrintCleanup(stdout, report, options.JSON)
 	}
 
 	// Handle --product all to run across all registered products
@@ -201,6 +230,7 @@ COMMANDS:
     inventory      AI runtime and agent inventory
     security       AI tool security audit
     hygiene        AI storage usage analysis
+    cleanup        Scan and clean old models, caches, vector DBs, and logs
     products       List supported product providers
     audit          Discover residuals for a product
     plan           Generate deletion plan (dry-run)
@@ -210,6 +240,7 @@ COMMANDS:
 
 OPTIONS:
     --product <id>     Product provider (default: openclaw, use 'all' for all products)
+    --category <cat>   Cleanup category filter (model_version/orphaned_cache/unused_vectordb/log_rotation/all)
     --dry-run          Report actions without executing
     --yes              Skip interactive confirmation
     --json             JSON output
@@ -226,6 +257,8 @@ OPTIONS:
 
 EXAMPLES:
     claw-remove environment
+    claw-remove cleanup
+    claw-remove cleanup --category model_version
     claw-remove audit --product openclaw
     claw-remove plan --product openclaw
     claw-remove apply --product openclaw --dry-run
@@ -250,7 +283,7 @@ func parseOptions(args []string) (model.Options, error) {
 		case "products":
 			opts.Command = "products"
 			return opts, nil
-		case "environment", "inventory", "security", "hygiene":
+		case "environment", "inventory", "security", "hygiene", "cleanup":
 			opts.Command = args[0]
 			args = args[1:] // Continue to parse flags
 		case "audit", "plan", "apply", "verify", "explain":
@@ -273,6 +306,7 @@ func parseOptions(args []string) (model.Options, error) {
 	fs.BoolVar(&opts.KillProcesses, "kill-processes", false, "terminate matching processes")
 	fs.BoolVar(&opts.RemoveDocker, "remove-docker", false, "remove matching docker/podman containers and images")
 	fs.BoolVar(&opts.Version, "version", false, "print version information and exit")
+	fs.StringVar(&opts.Category, "category", "", "cleanup category filter (model_version/orphaned_cache/unused_vectordb/log_rotation/all)")
 	fs.StringVar(&opts.Product, "product", opts.Product, "product provider id")
 	fs.SetOutput(io.Discard)
 	if err := fs.Parse(args); err != nil {
