@@ -1,38 +1,25 @@
 package tui
 
 import (
-	"context"
 	"strings"
 	"testing"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tianrking/ClawRemove/internal/cleanup"
 	"github.com/tianrking/ClawRemove/internal/core"
+	"github.com/tianrking/ClawRemove/internal/executor"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/system"
 	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/llm"
-	"github.com/tianrking/ClawRemove/internal/executor"
 )
-
-// Mock executor that doesn't actually remove anything
-type mockExecutor struct{}
-
-func (m mockExecutor) Execute(ctx context.Context, plan model.Plan, options model.Options, product string) []model.Result {
-	var results []model.Result
-	for _, a := range plan.Actions {
-		results = append(results, model.Result{OK: true, Target: a.Target})
-	}
-	return results
-}
 
 func TestTUIModelInitialization(t *testing.T) {
 	runner := system.NewRunner()
 	host := platform.Detect()
 	engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, nil), host)
 	scanner := cleanup.NewScanner(runner)
-	exec := mockExecutor{}
+	exec := executor.New(runner, nil)
 
 	opts := model.Options{}
 	m := InitialModel(engine, scanner, exec, opts).(modelTUI)

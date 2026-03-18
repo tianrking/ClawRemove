@@ -32,7 +32,7 @@ func (m *mockRunner) Exists(ctx context.Context, name string) bool {
 
 func TestExecuteReportOnlyAction(t *testing.T) {
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -40,7 +40,7 @@ func TestExecuteReportOnlyAction(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -60,7 +60,7 @@ func TestExecuteRunCommand(t *testing.T) {
 	runner := &mockRunner{
 		runResult: system.CommandResult{OK: true, Stdout: "success"},
 	}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -68,7 +68,7 @@ func TestExecuteRunCommand(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -83,7 +83,7 @@ func TestExecuteRunCommand(t *testing.T) {
 
 func TestExecuteRunCommandDryRun(t *testing.T) {
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -91,7 +91,7 @@ func TestExecuteRunCommandDryRun(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true})
+	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -111,7 +111,7 @@ func TestExecuteRunCommandFailure(t *testing.T) {
 	runner := &mockRunner{
 		runResult: system.CommandResult{OK: false, Stderr: "command failed"},
 	}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -119,7 +119,7 @@ func TestExecuteRunCommandFailure(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -134,7 +134,7 @@ func TestExecuteRunCommandFailure(t *testing.T) {
 
 func TestExecuteRunCommandMissingCommand(t *testing.T) {
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -142,7 +142,7 @@ func TestExecuteRunCommandMissingCommand(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -164,7 +164,7 @@ func TestExecuteRemovePath(t *testing.T) {
 	}
 
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -172,7 +172,7 @@ func TestExecuteRemovePath(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -196,7 +196,7 @@ func TestExecuteRemovePathDryRun(t *testing.T) {
 	}
 
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -204,7 +204,7 @@ func TestExecuteRemovePathDryRun(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true})
+	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -224,7 +224,7 @@ func TestExecuteRemovePathDryRun(t *testing.T) {
 
 func TestExecuteRemovePathRootRefusal(t *testing.T) {
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -232,7 +232,7 @@ func TestExecuteRemovePathRootRefusal(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -260,7 +260,7 @@ eval "$(openclaw completion zsh)"
 	}
 
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -273,7 +273,7 @@ eval "$(openclaw completion zsh)"
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -311,7 +311,7 @@ eval "$(openclaw completion zsh)"
 	originalContent, _ := os.ReadFile(profilePath)
 
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -324,7 +324,7 @@ eval "$(openclaw completion zsh)"
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true})
+	results := exec.Execute(context.Background(), plan, model.Options{DryRun: true}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -345,7 +345,7 @@ eval "$(openclaw completion zsh)"
 
 func TestExecuteCleanShellProfileNotExist(t *testing.T) {
 	runner := &mockRunner{}
-	exec := New(runner)
+	exec := New(runner, nil)
 
 	plan := model.Plan{
 		Actions: []model.Action{
@@ -358,7 +358,7 @@ func TestExecuteCleanShellProfileNotExist(t *testing.T) {
 		},
 	}
 
-	results := exec.Execute(context.Background(), plan, model.Options{})
+	results := exec.Execute(context.Background(), plan, model.Options{}, "test")
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))

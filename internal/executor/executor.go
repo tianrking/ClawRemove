@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"slices"
 
 	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/model"

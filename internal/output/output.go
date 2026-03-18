@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/model"
 )
 

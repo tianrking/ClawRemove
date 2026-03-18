@@ -650,7 +650,7 @@ func currentUID() string {
 
 // searchAgentTraces searches for agent-specific patterns across the filesystem
 func (m Mediator) searchAgentTraces(report model.Report, input map[string]any) (any, error) {
-	productMarkers := report.ProductFacts.Markers
+	productMarkers := []string{report.Product}
 	if len(productMarkers) == 0 {
 		productMarkers = []string{"agent", "bot", "assistant"}
 	}
@@ -875,7 +875,7 @@ func (m Mediator) configProbe(report model.Report, input map[string]any) (any, e
 	}
 
 	homeDir, _ := os.UserHomeDir()
-	productMarkers := report.ProductFacts.Markers
+	productMarkers := []string{report.Product}
 
 	// Common config file patterns
 	configPatterns := []string{
