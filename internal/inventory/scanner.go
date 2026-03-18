@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/tianrking/ClawRemove/internal/platform"
 	"github.com/tianrking/ClawRemove/internal/system"
@@ -92,15 +93,55 @@ type ServiceInfo struct {
 	Running bool   `json:"running"`
 }
 
-// Scan performs a full AI inventory scan.
+// Scan performs a full AI inventory scan with parallel execution.
 func (s *Scanner) Scan(ctx context.Context) AIInventory {
+	var (
+		wg          sync.WaitGroup
+
+		runtimes    []RuntimeInfo
+		frameworks  []FrameworkInfo
+		modelCaches []ModelCacheInfo
+		vectorStores []VectorStoreInfo
+		agents      []AgentInfo
+		services    []ServiceInfo
+	)
+
+	// Launch parallel scans
+	wg.Add(6)
+	go func() {
+		defer wg.Done()
+		runtimes = s.scanRuntimes(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		frameworks = s.scanFrameworks(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		modelCaches = s.scanModelCaches()
+	}()
+	go func() {
+		defer wg.Done()
+		vectorStores = s.scanVectorStores(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		agents = s.scanAgents()
+	}()
+	go func() {
+		defer wg.Done()
+		services = s.scanServices(ctx)
+	}()
+
+	wg.Wait()
+
 	return AIInventory{
-		Runtimes:    s.scanRuntimes(ctx),
-		Frameworks:  s.scanFrameworks(ctx),
-		ModelCaches: s.scanModelCaches(),
-		VectorStores: s.scanVectorStores(ctx),
-		Agents:      s.scanAgents(),
-		Services:    s.scanServices(ctx),
+		Runtimes:    runtimes,
+		Frameworks:  frameworks,
+		ModelCaches: modelCaches,
+		VectorStores: vectorStores,
+		Agents:      agents,
+		Services:    services,
 	}
 }
 

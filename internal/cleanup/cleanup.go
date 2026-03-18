@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/tianrking/ClawRemove/internal/cache"
 	"github.com/tianrking/ClawRemove/internal/model"
 	"github.com/tianrking/ClawRemove/internal/system"
 )
@@ -16,21 +18,60 @@ import (
 type Scanner struct {
 	runner system.Runner
 	home   string
+	cache  *cache.Cache
 }
 
 // NewScanner creates a new cleanup scanner.
 func NewScanner(runner system.Runner) *Scanner {
 	home, _ := os.UserHomeDir()
-	return &Scanner{runner: runner, home: home}
+	return &Scanner{
+		runner: runner,
+		home:   home,
+		cache:  cache.Global(),
+	}
 }
 
-// ScanAll aggregates all cleanup candidates.
+// ScanAll aggregates all cleanup candidates with parallel execution.
 func (s *Scanner) ScanAll(ctx context.Context) model.CleanupReport {
-	var candidates []model.CleanupCandidate
-	candidates = append(candidates, s.ScanModelVersions()...)
-	candidates = append(candidates, s.ScanOrphanedCaches()...)
-	candidates = append(candidates, s.ScanUnusedVectorDBs(ctx)...)
-	candidates = append(candidates, s.ScanLogs()...)
+	var (
+		wg        sync.WaitGroup
+		mu        sync.Mutex
+
+		candidates []model.CleanupCandidate
+	)
+
+	// Launch parallel scans
+	wg.Add(4)
+	go func() {
+		defer wg.Done()
+		result := s.ScanModelVersions()
+		mu.Lock()
+		candidates = append(candidates, result...)
+		mu.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		result := s.ScanOrphanedCaches()
+		mu.Lock()
+		candidates = append(candidates, result...)
+		mu.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		result := s.ScanUnusedVectorDBs(ctx)
+		mu.Lock()
+		candidates = append(candidates, result...)
+		mu.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		result := s.ScanLogs()
+		mu.Lock()
+		candidates = append(candidates, result...)
+		mu.Unlock()
+	}()
+
+	wg.Wait()
 
 	var totalReclaimable int64
 	for _, c := range candidates {
@@ -196,7 +237,7 @@ func (s *Scanner) ScanOrphanedCaches() []model.CleanupCandidate {
 
 		// Check if the corresponding runtime/binary still exists
 		if !commandExists(check.binaryName) {
-			size := dirSize(check.cachePath)
+			size := s.dirSize(check.cachePath)
 			if size > 1024*1024 { // Only report >1MB
 				candidates = append(candidates, model.CleanupCandidate{
 					Path:     check.cachePath,
@@ -288,7 +329,7 @@ func (s *Scanner) ScanUnusedVectorDBs(ctx context.Context) []model.CleanupCandid
 		}
 
 		if !running {
-			size := dirSize(check.dataPath)
+			size := s.dirSize(check.dataPath)
 			if size > 1024*1024 { // Only report >1MB
 				candidates = append(candidates, model.CleanupCandidate{
 					Path:     check.dataPath,
@@ -470,7 +511,17 @@ func commandExists(name string) bool {
 	return false
 }
 
-func dirSize(path string) int64 {
+func (s *Scanner) dirSize(path string) int64 {
+	// Use cache if available
+	if s.cache != nil {
+		return s.cache.DirSize(path, func(p string) int64 {
+			return calculateDirSize(p)
+		})
+	}
+	return calculateDirSize(path)
+}
+
+func calculateDirSize(path string) int64 {
 	var size int64
 	filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
@@ -479,6 +530,11 @@ func dirSize(path string) int64 {
 		return nil
 	})
 	return size
+}
+
+// Package-level function for backward compatibility
+func dirSize(path string) int64 {
+	return calculateDirSize(path)
 }
 
 func formatSize(bytes int64) string {

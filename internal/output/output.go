@@ -7,17 +7,28 @@ import (
 	"io"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/tianrking/ClawRemove/internal/backup"
 	"github.com/tianrking/ClawRemove/internal/model"
 )
 
 // PrintEnvironment prints a full environment report.
-func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
-	if jsonMode {
+func PrintEnvironment(w io.Writer, report model.EnvironmentReport, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(report)
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
+		return encoder.Encode(report)
+	case FormatHTML:
+		return PrintEnvironmentHTML(w, report)
 	}
+
+	// Text format (default)
 
 	lines := []string{
 		"AI Environment Report",
@@ -129,8 +140,9 @@ func PrintEnvironment(w io.Writer, report model.EnvironmentReport, jsonMode bool
 }
 
 // PrintInventory prints only the inventory section.
-func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
-	if jsonMode {
+func PrintInventory(w io.Writer, report model.EnvironmentReport, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		inventory := struct {
 			Runtime   model.RuntimeSection   `json:"runtime"`
 			Agents    model.AgentsSection    `json:"agents"`
@@ -142,6 +154,19 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 		}
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
+		return encoder.Encode(inventory)
+	case FormatYAML:
+		inventory := struct {
+			Runtime   model.RuntimeSection   `yaml:"runtime"`
+			Agents    model.AgentsSection    `yaml:"agents"`
+			Artifacts model.ArtifactsSection `yaml:"artifacts"`
+		}{
+			Runtime:   report.Runtime,
+			Agents:    report.Agents,
+			Artifacts: report.Artifacts,
+		}
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
 		return encoder.Encode(inventory)
 	}
 
@@ -210,10 +235,15 @@ func PrintInventory(w io.Writer, report model.EnvironmentReport, jsonMode bool) 
 }
 
 // PrintSecurity prints only the security section.
-func PrintSecurity(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
-	if jsonMode {
+func PrintSecurity(w io.Writer, report model.EnvironmentReport, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
+		return encoder.Encode(report.Security)
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
 		return encoder.Encode(report.Security)
 	}
 
@@ -251,10 +281,15 @@ func PrintSecurity(w io.Writer, report model.EnvironmentReport, jsonMode bool) e
 }
 
 // PrintHygiene prints only the hygiene section.
-func PrintHygiene(w io.Writer, report model.EnvironmentReport, jsonMode bool) error {
-	if jsonMode {
+func PrintHygiene(w io.Writer, report model.EnvironmentReport, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
+		return encoder.Encode(report.Hygiene)
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
 		return encoder.Encode(report.Hygiene)
 	}
 
@@ -311,10 +346,15 @@ func formatSize(bytes int64) string {
 	}
 }
 
-func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
-	if jsonMode {
+func PrintReport(w io.Writer, report model.Report, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
 		return encoder.Encode(report)
 	}
 
@@ -391,24 +431,32 @@ func PrintReport(w io.Writer, report model.Report, jsonMode bool) error {
 	return err
 }
 
-func PrintProducts(w io.Writer, providers []model.ProductFacts, jsonMode bool) error {
-	if jsonMode {
-		_, err := io.WriteString(w, "[")
-		if err != nil {
-			return err
+func PrintProducts(w io.Writer, providers []model.ProductFacts, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
+		type productJSON struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
 		}
-		for i, p := range providers {
-			if i > 0 {
-				if _, err := io.WriteString(w, ","); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(w, fmt.Sprintf(`{"id":"%s","displayName":"%s"}`, p.ID, p.DisplayName)); err != nil {
-				return err
-			}
+		var list []productJSON
+		for _, p := range providers {
+			list = append(list, productJSON{ID: p.ID, DisplayName: p.DisplayName})
 		}
-		_, err = io.WriteString(w, "]\n")
-		return err
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(list)
+	case FormatYAML:
+		type productYAML struct {
+			ID          string `yaml:"id"`
+			DisplayName string `yaml:"displayName"`
+		}
+		var list []productYAML
+		for _, p := range providers {
+			list = append(list, productYAML{ID: p.ID, DisplayName: p.DisplayName})
+		}
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
+		return encoder.Encode(list)
 	}
 	for _, p := range providers {
 		if _, err := io.WriteString(w, p.ID+"\t"+p.DisplayName+"\n"); err != nil {
@@ -439,11 +487,18 @@ func ConfirmApply(reader io.Reader, stdout io.Writer, stderr io.Writer, product 
 }
 
 // PrintCleanup prints a cleanup scan report.
-func PrintCleanup(w io.Writer, report model.CleanupReport, jsonMode bool) error {
-	if jsonMode {
+func PrintCleanup(w io.Writer, report model.CleanupReport, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(report)
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
+		return encoder.Encode(report)
+	case FormatHTML:
+		return PrintCleanupHTML(w, report)
 	}
 
 	lines := []string{
@@ -510,10 +565,15 @@ func PrintCleanup(w io.Writer, report model.CleanupReport, jsonMode bool) error 
 }
 
 // PrintSnapshots prints a list of available backups.
-func PrintSnapshots(w io.Writer, snapshots []backup.Snapshot, jsonMode bool) error {
-	if jsonMode {
+func PrintSnapshots(w io.Writer, snapshots []backup.Snapshot, format OutputFormat) error {
+	switch format {
+	case FormatJSON:
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
+		return encoder.Encode(map[string]any{"snapshots": snapshots})
+	case FormatYAML:
+		encoder := yaml.NewEncoder(w)
+		encoder.SetIndent(2)
 		return encoder.Encode(map[string]any{"snapshots": snapshots})
 	}
 

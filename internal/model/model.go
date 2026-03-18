@@ -8,6 +8,7 @@ type Options struct {
 	Yes           bool
 	Quiet         bool
 	JSON          bool
+	Format        string // Output format: text, json, yaml, html
 	AI            bool
 	AuditOnly     bool
 	NoBackup      bool

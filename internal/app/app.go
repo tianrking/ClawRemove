@@ -24,6 +24,17 @@ import (
 
 var Version = "dev"
 
+// getOutputFormat converts options to OutputFormat
+func getOutputFormat(options model.Options) output.OutputFormat {
+	if options.Format != "" {
+		return output.ParseFormat(options.Format)
+	}
+	if options.JSON {
+		return output.FormatJSON
+	}
+	return output.FormatText
+}
+
 func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) (int, error) {
 	options, err := parseOptions(args)
 	if err != nil {
@@ -50,7 +61,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		for _, p := range products.Registry() {
 			facts = append(facts, model.ProductFacts{ID: p.ID(), DisplayName: p.DisplayName()})
 		}
-		return 0, output.PrintProducts(stdout, facts, options.JSON)
+		return 0, output.PrintProducts(stdout, facts, getOutputFormat(options))
 	}
 
 	// Environment inspection commands (no product required)
@@ -59,16 +70,17 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		host := platform.Detect()
 		engine := core.NewEngine(runner, llm.NewAdvisorFromEnv(runner, host, nil), host)
 		envReport := engine.InspectEnvironment(ctx)
+		outFmt := getOutputFormat(options)
 
 		switch options.Command {
 		case "inventory":
-			return 0, output.PrintInventory(stdout, envReport, options.JSON)
+			return 0, output.PrintInventory(stdout, envReport, outFmt)
 		case "security":
-			return 0, output.PrintSecurity(stdout, envReport, options.JSON)
+			return 0, output.PrintSecurity(stdout, envReport, outFmt)
 		case "hygiene":
-			return 0, output.PrintHygiene(stdout, envReport, options.JSON)
+			return 0, output.PrintHygiene(stdout, envReport, outFmt)
 		case "environment":
-			return 0, output.PrintEnvironment(stdout, envReport, options.JSON)
+			return 0, output.PrintEnvironment(stdout, envReport, outFmt)
 		}
 	}
 
@@ -97,7 +109,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			}
 		}
 
-		return 0, output.PrintCleanup(stdout, report, options.JSON)
+		return 0, output.PrintCleanup(stdout, report, getOutputFormat(options))
 	}
 	
 	if options.Command == "tui" {
@@ -125,7 +137,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			if err != nil {
 				return 1, err
 			}
-			return 0, output.PrintSnapshots(stdout, snaps, options.JSON)
+			return 0, output.PrintSnapshots(stdout, snaps, getOutputFormat(options))
 		}
 
 		if options.Command == "rollback" {
@@ -178,7 +190,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		if err != nil {
 			return 1, err
 		}
-		if err := output.PrintReport(stdout, report, false); err != nil {
+		if err := output.PrintReport(stdout, report, output.FormatText); err != nil {
 			return 1, err
 		}
 		confirmed, err := output.ConfirmApply(os.Stdin, stdout, stderr, options.Product, report)
@@ -193,7 +205,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	if err != nil {
 		return 1, err
 	}
-	if err := output.PrintReport(stdout, report, options.JSON); err != nil {
+	if err := output.PrintReport(stdout, report, getOutputFormat(options)); err != nil {
 		return 1, err
 	}
 	if !report.OK {
@@ -252,7 +264,7 @@ func runAllProducts(ctx context.Context, options model.Options, stdout io.Writer
 			hasErrors = true
 		}
 
-		if err := output.PrintReport(stdout, report, options.JSON); err != nil {
+		if err := output.PrintReport(stdout, report, getOutputFormat(options)); err != nil {
 			return 1, err
 		}
 
@@ -351,6 +363,7 @@ func parseOptions(args []string) (model.Options, error) {
 	fs.BoolVar(&opts.Yes, "yes", false, "reserved for non-interactive confirmation flows")
 	fs.BoolVar(&opts.Quiet, "quiet", false, "reduce console output")
 	fs.BoolVar(&opts.JSON, "json", false, "emit machine-readable JSON output")
+	fs.StringVar(&opts.Format, "format", "", "output format (text/json/yaml)")
 	fs.BoolVar(&opts.AI, "ai", false, "include controlled advisory analysis in the report")
 	fs.BoolVar(&opts.AuditOnly, "audit", false, "only audit residuals, do not execute removal actions")
 	fs.BoolVar(&opts.KeepCLI, "keep-cli", false, "keep CLI packages and wrappers")

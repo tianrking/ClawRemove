@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/tianrking/ClawRemove/internal/model"
@@ -36,26 +37,119 @@ func (d Discoverer) Discover(ctx context.Context) (model.Discovery, error) {
 		return model.Discovery{}, err
 	}
 
+	// Phase 1: Get stateDirs first (needed by workspaces)
 	stateDirs := d.discoverStateDirs(home)
+
+	// Phase 2: Parallel discovery for independent operations
+	var (
+		wg                 sync.WaitGroup
+
+		workspaceDirs      []string
+		tempPaths          []string
+		shellProfiles      []string
+		appPaths           []string
+		cliPaths           []string
+		packages           []model.PackageRef
+		services           []model.ServiceRef
+		processes          []model.ProcessRef
+		listeners          []string
+		crontabLines       []string
+		containers         []model.ContainerRef
+		images             []model.ImageRef
+		registryKeys       []model.RegistryRef
+		envVars            []model.EnvVarRef
+		hostsEntries       []string
+	)
+
+	// Launch parallel goroutines for independent discoveries
+	wg.Add(16)
+	go func() {
+		defer wg.Done()
+		workspaceDirs = d.discoverWorkspaces(home, stateDirs)
+	}()
+	go func() {
+		defer wg.Done()
+		tempPaths = d.discoverTempPaths()
+	}()
+	go func() {
+		defer wg.Done()
+		shellProfiles = d.discoverShellProfiles(home)
+	}()
+	go func() {
+		defer wg.Done()
+		appPaths = d.discoverAppPaths(home)
+	}()
+	go func() {
+		defer wg.Done()
+		cliPaths = d.discoverCLIPaths(home)
+	}()
+	go func() {
+		defer wg.Done()
+		packages = d.discoverPackages(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		services = d.discoverServices(ctx, home)
+	}()
+	go func() {
+		defer wg.Done()
+		processes = d.discoverProcesses(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		listeners = d.discoverListeners(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		crontabLines = d.discoverCrontab(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		containers = d.discoverContainers(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		images = d.discoverImages(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		registryKeys = d.discoverRegistryKeys(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		envVars = d.discoverEnvVars(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		hostsEntries = d.discoverHostsEntries(ctx)
+	}()
+	// Extra goroutine to wait and close a signal channel if needed
+	go func() {
+		wg.Wait()
+	}()
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
 	return model.Discovery{
 		Platform:      d.host.OS,
 		HomeDir:       home,
 		StateDirs:     stateDirs,
-		WorkspaceDirs: d.discoverWorkspaces(home, stateDirs),
-		TempPaths:     d.discoverTempPaths(),
-		ShellProfiles: d.discoverShellProfiles(home),
-		AppPaths:      d.discoverAppPaths(home),
-		CLIPaths:      d.discoverCLIPaths(home),
-		Packages:      d.discoverPackages(ctx),
-		Services:      d.discoverServices(ctx, home),
-		Processes:     d.discoverProcesses(ctx),
-		Listeners:     d.discoverListeners(ctx),
-		CrontabLines:  d.discoverCrontab(ctx),
-		Containers:    d.discoverContainers(ctx),
-		Images:        d.discoverImages(ctx),
-		RegistryKeys:  d.discoverRegistryKeys(ctx),
-		EnvVars:       d.discoverEnvVars(ctx),
-		HostsEntries:  d.discoverHostsEntries(ctx),
+		WorkspaceDirs: workspaceDirs,
+		TempPaths:     tempPaths,
+		ShellProfiles: shellProfiles,
+		AppPaths:      appPaths,
+		CLIPaths:      cliPaths,
+		Packages:      packages,
+		Services:      services,
+		Processes:     processes,
+		Listeners:     listeners,
+		CrontabLines:  crontabLines,
+		Containers:    containers,
+		Images:        images,
+		RegistryKeys:  registryKeys,
+		EnvVars:       envVars,
+		HostsEntries:  hostsEntries,
 	}, nil
 }
 

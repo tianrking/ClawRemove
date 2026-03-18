@@ -16,7 +16,7 @@ func TestPrintProductsJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := PrintProducts(&buf, facts, true)
+	err := PrintProducts(&buf, facts, FormatJSON)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestPrintReportJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := PrintReport(&buf, report, true)
+	err := PrintReport(&buf, report, FormatJSON)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

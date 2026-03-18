@@ -302,6 +302,36 @@ NOT similar to:
 - [x] Unused vector db cleanup
 - [x] Log rotation
 
+### Phase 6: Performance & UX Enhancement 🚧
+
+#### 6.1 Performance Optimization
+- [ ] Parallel scanning (Discovery, Inventory, Cleanup scanners)
+- [ ] dirSize optimization (concurrent filepath.Walk)
+- [ ] File system operation caching
+- [ ] Lazy loading for Discovery fields
+- [ ] Timeout limits for large directory traversal
+
+#### 6.2 Output Format Enhancement
+- [ ] YAML output format support
+- [ ] HTML report generation
+- [ ] Formatter interface abstraction
+- [ ] Output format CLI flag (`--format text/json/yaml/html`)
+
+#### 6.3 TUI Enhancement
+- [ ] Pagination support for large lists
+- [ ] Search/filter functionality
+- [ ] Detail panel for selected items
+- [ ] Progress bar with percentage
+- [ ] Theme/color scheme support
+- [ ] Extended coverage (environment, security commands)
+
+#### 6.4 ReAct & Skills Enhancement (Vertical)
+- [ ] Parallel batch tool execution
+- [ ] Tool result caching
+- [ ] Improved error recovery
+- [ ] Enhanced confidence scoring
+- [ ] Better progress streaming
+
 ## Supported Agents
 
 | Agent | Type | State Directory |
