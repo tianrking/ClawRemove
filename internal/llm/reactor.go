@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/tianrking/ClawRemove/internal/llm/mediation"
 	"github.com/tianrking/ClawRemove/internal/llm/prompts"
@@ -145,30 +146,44 @@ func (a controlledAdvisor) AssessWithStream(ctx context.Context, report model.Re
 
 		switch strings.ToLower(next.Kind) {
 		case "tool":
-			// Support batch tool execution
+			// Support batch tool execution with parallel processing
 			toolCalls := next.Tools
 			if len(toolCalls) == 0 && next.Tool != "" {
 				toolCalls = []toolCall{{Tool: next.Tool, Input: next.Input}}
 			}
 
-			var toolResults []map[string]any
+			// Execute tools in parallel for better performance
+			var (
+				wg          sync.WaitGroup
+				mu          sync.Mutex
+				toolResults []map[string]any
+			)
+
 			for _, tc := range toolCalls {
-				stream("   🔧 Using tool: %s", tc.Tool)
-				toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, tc.Tool, tc.Input)
-				if toolErr != nil {
-					stream("   ⚠️ Tool error: %s", toolErr.Error())
-					toolResults = append(toolResults, map[string]any{
-						"tool":  tc.Tool,
-						"error": toolErr.Error(),
-					})
-				} else {
-					stream("   ✅ Tool result received")
-					toolResults = append(toolResults, map[string]any{
-						"tool":   tc.Tool,
-						"result": toolResult,
-					})
-				}
+				wg.Add(1)
+				go func(toolCall toolCall) {
+					defer wg.Done()
+					stream("   🔧 Using tool: %s", toolCall.Tool)
+					toolResult, toolErr := a.mediator.ExecuteTool(ctx, report, toolCall.Tool, toolCall.Input)
+
+					mu.Lock()
+					defer mu.Unlock()
+					if toolErr != nil {
+						stream("   ⚠️ Tool error: %s", toolErr.Error())
+						toolResults = append(toolResults, map[string]any{
+							"tool":  toolCall.Tool,
+							"error": toolErr.Error(),
+						})
+					} else {
+						stream("   ✅ Tool result received")
+						toolResults = append(toolResults, map[string]any{
+							"tool":   toolCall.Tool,
+							"result": toolResult,
+						})
+					}
+				}(tc)
 			}
+			wg.Wait()
 
 			// If any tool failed, let AI know
 			var failedTools []string
