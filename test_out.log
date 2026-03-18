@@ -1,0 +1,35 @@
+﻿?   	github.com/tianrking/ClawRemove/cmd/claw-remove	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/app	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/backup	(cached)
+ok  	github.com/tianrking/ClawRemove/internal/cleanup	(cached)
+?   	github.com/tianrking/ClawRemove/internal/core	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/discovery	(cached)
+?   	github.com/tianrking/ClawRemove/internal/evidence	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/executor	0.645s
+?   	github.com/tianrking/ClawRemove/internal/inventory	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/llm	(cached)
+?   	github.com/tianrking/ClawRemove/internal/llm/mediation	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/llm/prompts	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/llm/providers	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/model	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/output	(cached)
+ok  	github.com/tianrking/ClawRemove/internal/plan	(cached)
+ok  	github.com/tianrking/ClawRemove/internal/platform	(cached)
+ok  	github.com/tianrking/ClawRemove/internal/products	(cached)
+?   	github.com/tianrking/ClawRemove/internal/products/aider	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/cline	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/continuedev	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/cursor	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/nanobot	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/nanoclaw	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/openclaw	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/openfang	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/picoclaw	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/windsurf	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/products/zeroclaw	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/security	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/skills	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/system	[no test files]
+?   	github.com/tianrking/ClawRemove/internal/tools	[no test files]
+ok  	github.com/tianrking/ClawRemove/internal/tui	0.812s
+ok  	github.com/tianrking/ClawRemove/internal/verify	(cached)

@@ -44,8 +44,10 @@ func TestTUIUpdateAndNavigation(t *testing.T) {
 			{Path: "/test2", Size: 200},
 			{Path: "/test3", Size: 300},
 		},
-		selected: make(map[int]struct{}),
-		cursor:   0,
+		selected:   make(map[int]struct{}),
+		cursor:     0,
+		pageSize:   15,
+		pageOffset: 0,
 	}
 
 	// 1. Test moving down
@@ -69,12 +71,13 @@ func TestTUIUpdateAndNavigation(t *testing.T) {
 		t.Error("Expected item 0 to be selected")
 	}
 
-	// 4. Test toggle all
+	// 4. Test toggle all visible (now uses visible items only)
 	m.selected = make(map[int]struct{}) // reset
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
 	m = updated.(modelTUI)
+	// Since pageSize=15 > 3 items, all 3 should be visible and selected
 	if len(m.selected) != 3 {
-		t.Errorf("Expected all 3 items to be selected, got %d", len(m.selected))
+		t.Errorf("Expected all 3 visible items to be selected, got %d", len(m.selected))
 	}
 
 	// 5. Test execution trigger
@@ -91,15 +94,20 @@ func TestTUIUpdateAndNavigation(t *testing.T) {
 func TestTUIViewRendering(t *testing.T) {
 	m := modelTUI{
 		state: StateSelection,
+		report: model.CleanupReport{
+			TotalReclaimable: 1024,
+		},
 		candidates: []model.CleanupCandidate{
 			{Path: "/test1", Size: 1024, Category: "test_cache", Reason: "testing"},
 		},
-		selected: map[int]struct{}{0: {}},
-		cursor:   0,
+		selected:   map[int]struct{}{0: {}},
+		cursor:     0,
+		pageSize:   15,
+		pageOffset: 0,
 	}
 
 	view := m.View()
-	
+
 	if !strings.Contains(view, "ClawRemove") {
 		t.Error("View does not contain title")
 	}

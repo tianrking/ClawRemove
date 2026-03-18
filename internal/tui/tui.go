@@ -19,6 +19,7 @@ type ViewState int
 const (
 	StateScanning ViewState = iota
 	StateSelection
+	StateSearch
 	StateExecuting
 	StateDone
 )
@@ -28,17 +29,26 @@ type modelTUI struct {
 	scanner    *cleanup.Scanner
 	exec       executor.Executor
 	options    model.Options
-	
+
 	state      ViewState
 	report     model.CleanupReport
 	candidates []model.CleanupCandidate
 	selected   map[int]struct{}
 	cursor     int
-	
+
+	// Pagination
+	pageOffset int
+	pageSize   int
+
+	// Search
+	searchQuery  string
+	filtered     []int // indices of filtered candidates
+	searchActive bool
+
 	progressMsg string
 	execResults []model.Result
 	err         error
-	
+
 	width  int
 	height int
 }
@@ -55,12 +65,14 @@ type execResultMsg struct {
 
 func InitialModel(engine core.Engine, scanner *cleanup.Scanner, exec executor.Executor, opts model.Options) tea.Model {
 	return modelTUI{
-		engine:   engine,
-		scanner:  scanner,
-		exec:     exec,
-		options:  opts,
-		state:    StateScanning,
-		selected: make(map[int]struct{}),
+		engine:       engine,
+		scanner:      scanner,
+		exec:         exec,
+		options:      opts,
+		state:        StateScanning,
+		selected:     make(map[int]struct{}),
+		pageSize:     15, // Default page size
+		searchActive: false,
 	}
 }
 
@@ -108,29 +120,76 @@ func (m modelTUI) executeCleanup() tea.Cmd {
 func (m modelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle search input mode
+		if m.searchActive {
+			switch msg.String() {
+			case "esc":
+				m.searchActive = false
+				m.searchQuery = ""
+				m.filtered = nil
+				m.cursor = 0
+				m.pageOffset = 0
+			case "enter":
+				m.searchActive = false
+			case "backspace":
+				if len(m.searchQuery) > 0 {
+					m.searchQuery = m.searchQuery[:len(m.searchQuery)-1]
+					m.updateFilter()
+				}
+			default:
+				if len(msg.String()) == 1 && msg.String()[0] >= 32 {
+					m.searchQuery += msg.String()
+					m.updateFilter()
+				}
+			}
+			return m, nil
+		}
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		
+
 		case "up", "k":
 			if m.state == StateSelection && m.cursor > 0 {
 				m.cursor--
+				m.adjustPageOffset()
 			}
-		
+
 		case "down", "j":
-			if m.state == StateSelection && m.cursor < len(m.candidates)-1 {
+			if m.state == StateSelection && m.cursor < m.getDisplayCount()-1 {
 				m.cursor++
+				m.adjustPageOffset()
 			}
-			
+
+		case "pgup":
+			if m.state == StateSelection {
+				m.cursor -= m.pageSize
+				if m.cursor < 0 {
+					m.cursor = 0
+				}
+				m.pageOffset = m.cursor
+			}
+
+		case "pgdown":
+			if m.state == StateSelection {
+				m.cursor += m.pageSize
+				max := m.getDisplayCount() - 1
+				if m.cursor > max {
+					m.cursor = max
+				}
+				m.adjustPageOffset()
+			}
+
 		case " ":
 			if m.state == StateSelection {
-				if _, ok := m.selected[m.cursor]; ok {
-					delete(m.selected, m.cursor)
+				idx := m.getRealIndex(m.cursor)
+				if _, ok := m.selected[idx]; ok {
+					delete(m.selected, idx)
 				} else {
-					m.selected[m.cursor] = struct{}{}
+					m.selected[idx] = struct{}{}
 				}
 			}
-			
+
 		case "enter":
 			if m.state == StateSelection && len(m.selected) > 0 {
 				m.state = StateExecuting
@@ -138,17 +197,34 @@ func (m modelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.state == StateDone {
 				return m, tea.Quit
 			}
-			
+
 		case "a":
 			if m.state == StateSelection {
-				// Toggle all
-				if len(m.selected) == len(m.candidates) {
-					m.selected = make(map[int]struct{})
-				} else {
-					for i := range m.candidates {
-						m.selected[i] = struct{}{}
+				// Toggle all visible
+				visibleIndices := m.getVisibleIndices()
+				allSelected := true
+				for _, idx := range visibleIndices {
+					if _, ok := m.selected[idx]; !ok {
+						allSelected = false
+						break
 					}
 				}
+				if allSelected {
+					for _, idx := range visibleIndices {
+						delete(m.selected, idx)
+					}
+				} else {
+					for _, idx := range visibleIndices {
+						m.selected[idx] = struct{}{}
+					}
+				}
+			}
+
+		case "/":
+			if m.state == StateSelection {
+				m.searchActive = true
+				m.searchQuery = ""
+				m.filtered = nil
 			}
 		}
 
@@ -172,6 +248,10 @@ func (m modelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for i := range m.candidates {
 				m.selected[i] = struct{}{}
 			}
+			// Initialize filtered to show all
+			m.filtered = nil
+			m.cursor = 0
+			m.pageOffset = 0
 		}
 
 	case execResultMsg:
@@ -195,43 +275,90 @@ func (m modelTUI) View() string {
 	switch m.state {
 	case StateScanning:
 		b.WriteString(infoStyle.Render("  🔍 Scanning environment for cleanup candidates..."))
-		
+
 	case StateSelection:
-		b.WriteString(fmt.Sprintf("  Found %d items. Total reclaimable: %s\n", len(m.candidates), greenStyle.Render(formatSize(m.report.TotalReclaimable))))
-		b.WriteString(subtleStyle.Render("  [↑/↓] Navigate  [Space] Toggle  [a] Toggle All  [Enter] Execute  [q] Quit\n\n"))
-		
+		totalCount := len(m.candidates)
+		displayCount := m.getDisplayCount()
+		filteredCount := ""
+		if m.searchQuery != "" {
+			filteredCount = fmt.Sprintf(" (filtered from %d)", totalCount)
+		}
+		b.WriteString(fmt.Sprintf("  Found %d items%s. Total reclaimable: %s\n",
+			displayCount, filteredCount, greenStyle.Render(formatSize(m.report.TotalReclaimable))))
+
+		// Help line with pagination
+		helpLine := "  [↑/↓] Navigate  [Space] Toggle  [a] Toggle Visible  [/] Search"
+		if displayCount > m.pageSize {
+			helpLine += fmt.Sprintf("  [PgUp/PgDn] Page")
+		}
+		helpLine += "  [Enter] Execute  [q] Quit\n"
+		b.WriteString(subtleStyle.Render(helpLine))
+
+		// Search bar if active
+		if m.searchActive {
+			b.WriteString(fmt.Sprintf("  Search: %s█\n", m.searchQuery))
+		} else if m.searchQuery != "" {
+			b.WriteString(fmt.Sprintf("  Filter: %s [Esc to clear]\n", m.searchQuery))
+		}
+		b.WriteString("\n")
+
+		// Calculate visible range
+		start := m.pageOffset
+		end := start + m.pageSize
+		if end > displayCount {
+			end = displayCount
+		}
+
 		var selectedSize int64
-		for i, c := range m.candidates {
-			if _, ok := m.selected[i]; ok {
+		for i := start; i < end; i++ {
+			realIdx := m.getRealIndex(i)
+			c := m.candidates[realIdx]
+
+			if _, ok := m.selected[realIdx]; ok {
 				selectedSize += c.Size
 			}
-			
+
 			cursor := " "
 			if m.cursor == i {
 				cursor = ">"
 			}
-			
+
 			checked := " "
-			if _, ok := m.selected[i]; ok {
+			if _, ok := m.selected[realIdx]; ok {
 				checked = "x"
 			}
-			
-			line := fmt.Sprintf("%s [%s] %s (%s) - %s", 
-				cursor, 
-				checked, 
-				c.Category, 
+
+			line := fmt.Sprintf("%s [%s] %s (%s) - %s",
+				cursor,
+				checked,
+				c.Category,
 				formatSize(c.Size),
 				c.Reason,
 			)
-			
+
 			if m.cursor == i {
 				b.WriteString(selectedStyle.Render(line) + "\n")
 			} else {
 				b.WriteString(line + "\n")
 			}
 		}
-		
-		b.WriteString(fmt.Sprintf("\n  Selected to reclaim: %s\n", greenStyle.Render(formatSize(selectedSize))))
+
+		// Pagination info
+		if m.pageSize > 0 && displayCount > m.pageSize {
+			totalPages := (displayCount + m.pageSize - 1) / m.pageSize
+			currentPage := (m.cursor / m.pageSize) + 1
+			b.WriteString(fmt.Sprintf("\n  Page %d/%d (%d-%d of %d)\n",
+				currentPage, totalPages, start+1, end, displayCount))
+		}
+
+		// Calculate total selected size
+		var totalSelectedSize int64
+		for i := range m.candidates {
+			if _, ok := m.selected[i]; ok {
+				totalSelectedSize += m.candidates[i].Size
+			}
+		}
+		b.WriteString(fmt.Sprintf("\n  Selected to reclaim: %s\n", greenStyle.Render(formatSize(totalSelectedSize))))
 
 	case StateExecuting:
 		b.WriteString(warnStyle.Render("  🧹 Executing cleanup... Please wait."))
@@ -247,7 +374,7 @@ func (m modelTUI) View() string {
 				}
 			}
 			b.WriteString(fmt.Sprintf("  ✅ Cleanup complete. Successfully processed %d/%d items.\n", success, len(m.selected)))
-			
+
 			var failed int
 			for _, r := range m.execResults {
 				if !r.OK {
@@ -255,7 +382,7 @@ func (m modelTUI) View() string {
 					b.WriteString(errorStyle.Render(fmt.Sprintf("  ❌ Failed: %s - %s\n", r.Target, r.Error)))
 				}
 			}
-			
+
 			if failed == 0 {
 				b.WriteString(greenStyle.Render("\n  All selected items were successfully removed!"))
 			}
@@ -298,4 +425,66 @@ func formatSize(bytes int64) string {
 	default:
 		return fmt.Sprintf("%dB", bytes)
 	}
+}
+
+// getDisplayCount returns the number of items to display (filtered or all)
+func (m *modelTUI) getDisplayCount() int {
+	if len(m.filtered) > 0 {
+		return len(m.filtered)
+	}
+	return len(m.candidates)
+}
+
+// getRealIndex converts a display index to the real candidate index
+func (m *modelTUI) getRealIndex(displayIdx int) int {
+	if len(m.filtered) > 0 {
+		return m.filtered[displayIdx]
+	}
+	return displayIdx
+}
+
+// getVisibleIndices returns the indices of visible items on current page
+func (m *modelTUI) getVisibleIndices() []int {
+	start := m.pageOffset
+	end := start + m.pageSize
+	count := m.getDisplayCount()
+	if end > count {
+		end = count
+	}
+
+	var indices []int
+	for i := start; i < end; i++ {
+		indices = append(indices, m.getRealIndex(i))
+	}
+	return indices
+}
+
+// adjustPageOffset adjusts page offset to keep cursor visible
+func (m *modelTUI) adjustPageOffset() {
+	if m.cursor < m.pageOffset {
+		m.pageOffset = m.cursor
+	} else if m.cursor >= m.pageOffset+m.pageSize {
+		m.pageOffset = m.cursor - m.pageSize + 1
+	}
+}
+
+// updateFilter updates the filtered list based on search query
+func (m *modelTUI) updateFilter() {
+	m.filtered = nil
+	if m.searchQuery == "" {
+		return
+	}
+
+	query := strings.ToLower(m.searchQuery)
+	for i, c := range m.candidates {
+		if strings.Contains(strings.ToLower(c.Category), query) ||
+			strings.Contains(strings.ToLower(c.Reason), query) ||
+			strings.Contains(strings.ToLower(c.Path), query) {
+			m.filtered = append(m.filtered, i)
+		}
+	}
+
+	// Reset cursor and offset after filter
+	m.cursor = 0
+	m.pageOffset = 0
 }

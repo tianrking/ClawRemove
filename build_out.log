@@ -1,0 +1,5 @@
+﻿# github.com/tianrking/ClawRemove/internal/llm/mediation
+internal\llm\mediation\mediator.go:653:27: report.ProductFacts undefined (type model.Report has no field or method ProductFacts)
+internal\llm\mediation\mediator.go:878:27: report.ProductFacts undefined (type model.Report has no field or method ProductFacts)
+# github.com/tianrking/ClawRemove/internal/products/openclaw
+internal\products\openclaw\provider.go:7:2: "path/filepath" imported and not used
